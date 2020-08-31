@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin id="cordova-zohosalesiq-mobilisten" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+  <name>ZohoSalesIQ</name>
+  <js-module name="ZohoSalesIQ" src="www/ZohoSalesIQ.js">
+    <clobbers target="ZohoSalesIQ" />
+  </js-module>
+
+  <platform name="ios">
+    <podspec>
+        <config>
+            <source url="https://github.com/CocoaPods/Specs.git"/>
+        </config>
+        <pods use-frameworks="true">
+            <pod name="MobilistenBeta" options="podspec: 'https://raw.githubusercontent.com/zoho/Mobilisten-iOS-Beta/v3.2.9/MobilistenBeta.podspec'" />
+        </pods>
+    </podspec>
+    
+    <config-file target="*-Info.plist" parent="NSPhotoLibraryAddUsageDescription">
+        <string>We would like access to save media to your photo library.</string>
+    </config-file>
+    <config-file target="*-Info.plist" parent="NSPhotoLibraryUsageDescription">
+        <string>We would like access to the photo library to pick images.</string>
+    </config-file>
+    <config-file target="*-Info.plist" parent="NSCameraUsageDescription">
+        <string>We would like access to the camera to take photos.</string>
+    </config-file>
+    <config-file target="*-Info.plist" parent="NSMicrophoneUsageDescription">
+        <string>We would like access to the microphone to allow recording audio.</string>
+    </config-file>
+    <config-file target="*-Info.plist" parent="NSLocationWhenInUseUsageDescription">
+        <string>We would like access to location services to update your location on the map</string>
+    </config-file>
+
+    <config-file parent="/*" target="config.xml">
+      <feature name="ZohoSalesIQPlugin">
+        <param name="ios-package" value="ZohoSalesIQPlugin" />
+      </feature>
+    </config-file>
+    <source-file src="src/ios/ZohoSalesIQPlugin.m" />
+  </platform>
+
+  <platform name="android">
+    <framework custom="true" src="src/android/zohosalesIQ.gradle" type="gradleReference" />
+    <config-file parent="/*" target="res/xml/config.xml">
+      <feature name="ZohoSalesIQPlugin">
+        <param name="android-package" value="com.zohosalesiq.mobilisten.ZohoSalesIQPlugin" />
+      </feature>
+    </config-file>
+    <config-file parent="/*" target="AndroidManifest.xml"></config-file>
+    <source-file src="src/android/ZohoSalesIQPlugin.java" target-dir="src/com/zohosalesiq/mobilisten" />
+  </platform>
+</plugin>

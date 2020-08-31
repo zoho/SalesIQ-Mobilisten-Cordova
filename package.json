@@ -1,0 +1,23 @@
+{
+  "name": "cordova-zohosalesiq-mobilisten",
+  "version": "0.0.1",
+  "description": "ZohoSalesIQ Mobilisten plugin for Cordova",
+  "cordova": {
+    "id": "cordova-zohosalesiq-mobilisten",
+    "platforms": [
+      "ios",
+      "android"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git.csez.zohocorpin.com/zohosalesiq/cordova_zohosalesiq_mobilisten"
+  },
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-ios",
+    "cordova-android"
+  ],
+  "author": "Angu (angusamy.g@zohocorp.com)",
+  "license": "MIT"
+}
