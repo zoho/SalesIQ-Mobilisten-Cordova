@@ -123,12 +123,6 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
           if (action.equals("setChatTitle")) {
               this.setChatTitle(data.get(0).toString());
           }
-          if (action.equals("setVisitorNameVisibility")) {
-              this.setVisitorNameVisibility((boolean)data.get(0));
-          }
-          if (action.equals("setChatTitle")) {
-              this.setChatTitle(data.get(0).toString());
-          }
           if (action.equals("setLanguage")) {
               this.setLanguage(data.get(0).toString());
           }
@@ -662,7 +656,6 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
       });
   }
 
-
     private void getChats(final CallbackContext listCallback){
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable(){
@@ -1004,7 +997,6 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
           ZohoSalesIQ.init(application, appKey, accessKey, null, new OnInitCompleteListener() {
               @Override
               public void onInitComplete() {
-                  ZohoSalesIQ.enableDebugLogs();
                   if (fcmtoken != null) {
                       ZohoSalesIQ.Notification.enablePush(fcmtoken, istestdevice);
                   }
