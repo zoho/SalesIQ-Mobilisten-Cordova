@@ -32,7 +32,7 @@ ionic cordova plugin add https://github.com/zoho/SalesIQ-Mobilisten-Cordova.git
 
 **Ionic React Projects using Capacitor**
 ```
-npm install <package-name>
+npm install https://github.com/zoho/SalesIQ-Mobilisten-Cordova.git
 npx cap sync
 ```
 
