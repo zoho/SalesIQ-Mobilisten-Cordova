@@ -11,7 +11,7 @@ Connect with customers at every step of their journey. Give them the best in-app
 ## Requirements
 **iOS**: iOS 10 or above is required. The minimum version of Xcode required is Xcode 11.
 
-**Android**: Android SDK version 14 and above is required.
+**Android**: `minSdkVersion` 14 and above is required.
 
 
 ## Installation
