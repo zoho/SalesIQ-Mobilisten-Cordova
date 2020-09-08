@@ -16,6 +16,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.zoho.commons.ChatComponent;
 import com.zoho.commons.OnInitCompleteListener;
+import com.zoho.livechat.android.SIQVisitor;
 import com.zoho.livechat.android.SIQVisitorLocation;
 import com.zoho.livechat.android.SalesIQCustomAction;
 import com.zoho.livechat.android.VisitorChat;
@@ -1181,6 +1182,11 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
         @Override
         public void handleIPBlock() {
             eventEmitter(VISITOR_IPBLOCKED, null);
+        }
+
+        @Override
+        public void handleTrigger(String triggerName, SIQVisitor visitor) {
+
         }
 
         @Override
