@@ -10,8 +10,8 @@
         <config>
             <source url="https://github.com/CocoaPods/Specs.git"/>
         </config>
-        <pods use-frameworks="true">
-            <pod name="MobilistenBeta" options="podspec: 'https://raw.githubusercontent.com/zoho/Mobilisten-iOS-Beta/v3.2.9/MobilistenBeta.podspec'" />
+        <pods use-frameworks="true">s
+            <pod name="MobilistenBeta" options="podspec: 'https://raw.githubusercontent.com/zoho/Mobilisten-iOS-Beta/v3.5.10/MobilistenBeta.podspec'" />
         </pods>
     </podspec>
     

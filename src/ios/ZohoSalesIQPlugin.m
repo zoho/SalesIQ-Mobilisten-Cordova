@@ -1003,4 +1003,8 @@ void mainThread(void (^block)(void)) {
     [self sendEvent:ARTICLE_OPENED body:id];
 }
 
+- (void)handleTriggerWithName:(NSString *)name visitorInformation:(SIQVisitor *)visitorInformation{
+    
+}
+
 @end
