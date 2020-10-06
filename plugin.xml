@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<plugin id="cordova-zohosalesiq-mobilisten" version="0.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+<plugin id="cordova-zohosalesiq-mobilisten" version="1.1.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
   <name>ZohoSalesIQ</name>
   <js-module name="ZohoSalesIQ" src="www/ZohoSalesIQ.js">
     <clobbers target="ZohoSalesIQ" />
@@ -10,8 +10,8 @@
         <config>
             <source url="https://github.com/CocoaPods/Specs.git"/>
         </config>
-        <pods use-frameworks="true">s
-            <pod name="MobilistenBeta" options="podspec: 'https://raw.githubusercontent.com/zoho/Mobilisten-iOS-Beta/v3.5.10/MobilistenBeta.podspec'" />
+        <pods use-frameworks="true">
+            <pod name="MobilistenBeta" options="podspec: 'https://raw.githubusercontent.com/zoho/Mobilisten-iOS-Beta/v3.5.11/MobilistenBeta.podspec'" />
         </pods>
     </podspec>
     

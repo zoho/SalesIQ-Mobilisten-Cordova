@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -212,7 +213,15 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
               this.setThemeColorforiOS(data.get(0).toString());
           }
           if (action.equals("fetchAttenderImage")) {
-              this.fetchAttenderImage(LiveChatUtil.getString(data.get(0)),LiveChatUtil.getBoolean(data.get(1)),callbackContext);
+              cordova.getThreadPool().execute(new Runnable() {
+                  public void run() {
+                      try {
+                          fetchAttenderImage(LiveChatUtil.getString(data.get(0)),LiveChatUtil.getBoolean(data.get(1)),callbackContext);
+                      } catch (JSONException e) {
+                          LiveChatUtil.log(e);
+                      }
+                  }
+              });
           }
           if (action.equals("getChats")) {
               this.getChats(callbackContext);
@@ -634,16 +643,30 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
       ZohoSalesIQ.Chat.fetchAttenderImage(attenderId, defaultImage, new OperatorImageListener() {
           @Override
           public void onSuccess(Drawable drawable) {
-              Bitmap bitmap = ((BitmapDrawable)drawable).getBitmap();
+              if (drawable != null) {
+                  Bitmap bitmap;
 
-              ByteArrayOutputStream baos = new ByteArrayOutputStream();
-              bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos); //bm is the bitmap object
-              byte[] byteArrayImage = baos.toByteArray();
+                  try {
+                      bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
 
-              String encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
-              encodedImage = encodedImage.replace("\n","");         // No I18N
+                      Canvas canvas = new Canvas(bitmap);
+                      drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                      drawable.draw(canvas);
 
-              imageCallback.success(encodedImage);
+                      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                      bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                      byte[] byteArrayImage = baos.toByteArray();
+
+                      String encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+                      encodedImage = encodedImage.replace("\n", "");         // No I18N
+
+                      imageCallback.success(encodedImage);
+                  } catch (OutOfMemoryError e) {
+                      imageCallback.error(e.getMessage());
+                  }
+              } else {
+                  imageCallback.success("");
+              }
           }
 
           @Override

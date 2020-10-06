@@ -1,10 +1,12 @@
 repositories {
     google()
     jcenter()
-    maven { url "https://maven.zohodl.com/"}
+//    maven { url "https://maven.zohodl.com/"}
+    maven { url "http://build/zoho_android/android_salesiq_embed/milestones/betaLiveVersion/ANDROID_SALESIQ_EMBED_2_3_BETA_5/"}
+    maven { url "http://build/zoho_android/android_livechat_embed/milestones/betaLiveVersion/ANDROID_LIVECHAT_EMBED_2_3_BETA_5/"}
 }
 
 dependencies {
-    implementation "com.zoho.salesiq:mobilisten:2.4-beta.1"
+    implementation "com.zoho.salesiq:mobilisten:2.3-beta.5"
     implementation 'com.google.code.gson:gson:2.8.6'
 }
