@@ -135,6 +135,10 @@
         exec(success, error, serviceName, 'openChatWithID', [chatID]);         // No I18N
     };
 
+    exports.openNewChat = function (success, error) {
+        exec(success, error, serviceName, 'openNewChat', []);         // No I18N
+    };
+
     exports.fetchAttenderImage = function (attenderID, fetchDefault, success, error) {
         exec(success, error, serviceName, 'fetchAttenderImage', [attenderID, fetchDefault]);         // No I18N
     };

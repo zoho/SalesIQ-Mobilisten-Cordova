@@ -11,10 +11,10 @@
             <source url="https://github.com/CocoaPods/Specs.git"/>
         </config>
         <pods use-frameworks="true">
-            <pod name="MobilistenBeta" options="podspec: 'https://raw.githubusercontent.com/zoho/Mobilisten-iOS-Beta/v3.5.11/MobilistenBeta.podspec'" />
+            <pod name="MobilistenBeta" options="podspec: 'https://raw.githubusercontent.com/zoho/Mobilisten-iOS-Beta/v3.5.13/MobilistenBeta.podspec'" />
         </pods>
     </podspec>
-    
+
     <config-file target="*-Info.plist" parent="NSPhotoLibraryAddUsageDescription">
         <string>We would like access to save media to your photo library.</string>
     </config-file>

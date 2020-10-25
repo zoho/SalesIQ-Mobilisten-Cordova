@@ -55,9 +55,9 @@ NSString *serviceName = @"ZohoSalesIQ";
 
 - (void)performAdditionalSetup{
     //MARK:- PERFORM ADDITIONAL SETUP HERE
-    
+
     //Add calls to any native code/native Mobilisten API here.
-    
+
 }
 
 - (void)init:(CDVInvokedUrlCommand*)command{
@@ -77,7 +77,7 @@ NSString *serviceName = @"ZohoSalesIQ";
     if(actionDictionary == nil){
         actionDictionary = [[NSMutableDictionary<NSString *, SIQActionHandler *> alloc] init];
     }
-    
+
     ZohoSalesIQ.delegate = self;
     [ZohoSalesIQ Chat].delegate = self;
     [ZohoSalesIQ FAQ].delegate = self;
@@ -294,7 +294,7 @@ NSString *serviceName = @"ZohoSalesIQ";
 
 - (void)getChatsWithFilter:(CDVInvokedUrlCommand*)command{
     NSString *status = [command.arguments objectAtIndex:0];
-    
+
     if(status != nil){
         ChatStatus chatStatus = ChatStatusAll;
         if([status isEqual: TYPE_OPEN]){
@@ -320,7 +320,7 @@ NSString *serviceName = @"ZohoSalesIQ";
             CDVPluginResult* pluginResult = nil;
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
             [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
-            
+
             return;
         }
         [[ZohoSalesIQ Chat] getListWithFilter:chatStatus completion:^(NSError * _Nullable error, NSArray<SIQVisitorChat *> * _Nullable chats) {
@@ -345,6 +345,12 @@ NSString *serviceName = @"ZohoSalesIQ";
     });
 }
 
+- (void)openNewChat:(CDVInvokedUrlCommand*)command{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [[ZohoSalesIQ Chat] showWithReferenceID:nil new:YES];
+    });
+}
+
 - (void)openChatWithID:(CDVInvokedUrlCommand*)command{
     NSString *refID = [command.arguments objectAtIndex:0];
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -355,7 +361,7 @@ NSString *serviceName = @"ZohoSalesIQ";
 - (void)fetchAttenderImage:(CDVInvokedUrlCommand*)command{
     NSString *attenderID = [command.arguments objectAtIndex:0];
     BOOL fetchDefault = [[command.arguments objectAtIndex:1] boolValue];
-    
+
     SIQVisitorChat *chat = [SIQVisitorChat alloc];
     __block BOOL imageFetched = false;
     chat.attenderID = attenderID;
@@ -363,7 +369,7 @@ NSString *serviceName = @"ZohoSalesIQ";
         CDVPluginResult* pluginResult = nil;
         NSString *base64String = [UIImagePNGRepresentation(image) base64EncodedStringWithOptions:0];
         if(base64String == nil){ base64String = @""; }
-        
+
         if(!imageFetched){
             imageFetched = true;
             if(error != nil){
@@ -376,7 +382,7 @@ NSString *serviceName = @"ZohoSalesIQ";
             }
         }
     }];
-    
+
 }
 
 //MARK:- CHAT ACTION APIs
@@ -389,7 +395,7 @@ NSString *serviceName = @"ZohoSalesIQ";
             NSMutableDictionary *actionDetailsDictionary = [self getChatActionArguments:arguments withID:uuid actionName:actionName];
             [self sendEvent:PERFORM_CHATACTION body:actionDetailsDictionary];
         }];
-        
+
         [[ZohoSalesIQ ChatActions] registerWithAction:chatAction];
     }
 }
@@ -425,7 +431,7 @@ NSString *serviceName = @"ZohoSalesIQ";
     NSString *actionUUID = [command.arguments objectAtIndex:0];
     BOOL complete = [[command.arguments objectAtIndex:1] boolValue];
     NSString *message = [command.arguments objectAtIndex:2];
-    
+
     if(actionUUID != nil){
         if([actionDictionary valueForKey:actionUUID] != nil){
             SIQActionHandler *handler = [actionDictionary valueForKey:actionUUID];
@@ -459,12 +465,12 @@ NSString *serviceName = @"ZohoSalesIQ";
 
 - (void)setVisitorLocation:(CDVInvokedUrlCommand*)command{
     NSDictionary *location = [command.arguments objectAtIndex:0];
-    
+
     if(location!= nil){
         SIQVisitorLocation *visitorLocation = [SIQVisitorLocation new];
         NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
         formatter.numberStyle = NSNumberFormatterDecimalStyle;
-        
+
         if([location valueForKey:@"latitude"]!=nil){
             //NSNumber *latitude = [f numberFromString:[location valueForKey:@"latitude"]];
             if([[location valueForKey:@"latitude"] isKindOfClass:[NSNumber class]]){
@@ -475,7 +481,7 @@ NSString *serviceName = @"ZohoSalesIQ";
                 [visitorLocation setLatitude:latitude];
             }
         }
-        
+
         if([location valueForKey:@"longitude"]!=nil){
             if([[location valueForKey:@"longitude"] isKindOfClass:[NSNumber class]]){
                 [visitorLocation setLongitude:[location valueForKey:@"longitude"]];
@@ -485,41 +491,41 @@ NSString *serviceName = @"ZohoSalesIQ";
                 [visitorLocation setLongitude:longitude];
             }
         }
-        
+
         if([location valueForKey:@"zipCode"]!=nil){
             if([[location valueForKey:@"zipCode"] isKindOfClass:[NSString class]]){
                 [visitorLocation setZipCode:[location valueForKey:@"zipCode"]];
             }
         }
-        
+
         if([location valueForKey:@"city"]!=nil){
             if([[location valueForKey:@"city"] isKindOfClass:[NSString class]]){
                 [visitorLocation setCity:[location valueForKey:@"city"]];
             }
         }
-        
+
         if([location valueForKey:@"state"]!=nil){
             if([[location valueForKey:@"state"] isKindOfClass:[NSString class]]){
                 [visitorLocation setState:[location valueForKey:@"state"]];
             }
         }
-        
+
         if([location valueForKey:@"country"]!=nil){
             if([[location valueForKey:@"country"] isKindOfClass:[NSString class]]){
                 [visitorLocation setCountry:[location valueForKey:@"country"]];
             }
         }
-        
+
         if([location valueForKey:@"countryCode"]!=nil){
             if([[location valueForKey:@"countryCode"] isKindOfClass:[NSString class]]){
                 [visitorLocation setCountryCode:[location valueForKey:@"countryCode"]];
             }
         }
-        
+
         [[ZohoSalesIQ Visitor] setLocation:visitorLocation];
-        
+
     }
-    
+
 }
 
 - (void)setVisitorAddInfo:(CDVInvokedUrlCommand*)command{
@@ -681,7 +687,7 @@ void mainThread(void (^block)(void)) {
     if ([self.webView isKindOfClass:WKWebView.class]) {
         mainThread(^{
             [((WKWebView *)self.webView) evaluateJavaScript:script completionHandler:^(id resultID, NSError *error) {
-                
+
             }];
         });
     }
@@ -693,7 +699,7 @@ void mainThread(void (^block)(void)) {
     } else if ([self.webView isKindOfClass:WKWebView.class]) {
         mainThread(^{
             [((WKWebView *)self.webView) evaluateJavaScript:script completionHandler:^(id resultID, NSError *error) {
-                
+
             }];
         });;
     }
@@ -747,7 +753,7 @@ void mainThread(void (^block)(void)) {
         [categoryDict setObject: categoryID  forKey: @"id"];
         if([category name] != nil)
             [categoryDict setObject: [category name]  forKey: @"name"];
-        
+
         [categoryDict setObject: @([category articleCount])  forKey: @"articleCount"];
     }
     return categoryDict;
@@ -765,10 +771,10 @@ void mainThread(void (^block)(void)) {
 - (NSMutableArray *)getFAQCategoryList: (NSArray<SIQFAQCategory *> *) categories
 {
     NSMutableArray *categoryArray = [NSMutableArray array];
-    
+
     NSInteger i = 0;
     for (SIQFAQCategory *category in categories){
-        
+
         NSMutableDictionary *categoryDict = [NSMutableDictionary dictionary];
         if([category id] != nil){
             categoryDict = [self getFAQCategoryObject:category];
@@ -783,35 +789,35 @@ void mainThread(void (^block)(void)) {
 {
     NSMutableDictionary *articleDict = [NSMutableDictionary dictionary];
     if([article id] != nil){
-        
+
         NSString *articleID = [article id];
         [articleDict setObject: articleID  forKey: @"id"];
-        
+
         if([article categoryID] != nil)
             [articleDict setObject: [article categoryID]  forKey: @"categoryID"];
-        
+
         if([article categoryName] != nil)
             [articleDict setObject: [article categoryName]  forKey: @"categoryName"];
-        
+
         if([article lastModifiedTime] != nil){
             NSDate *modifiedTime = [article lastModifiedTime];
             int time = (int)[modifiedTime timeIntervalSince1970];
             [articleDict setObject: @(time) forKey: @"modifiedTime"];
         }
-        
+
         if([article createdTime] != nil){
             NSDate *modifiedTime = [article createdTime];
             int time = (int)[modifiedTime timeIntervalSince1970];
             [articleDict setObject: @(time) forKey: @"createdTime"];
         }
-        
+
         if([article name] != nil)
             [articleDict setObject: [article name]  forKey: @"name"];
-        
+
         [articleDict setObject: @([article viewCount])  forKey: @"viewCount"];
-        
+
         [articleDict setObject: @([article likeCount])  forKey: @"likeCount"];
-        
+
         [articleDict setObject: @([article dislikeCount])  forKey: @"dislikeCount"];
     }
     return articleDict;
@@ -821,9 +827,9 @@ void mainThread(void (^block)(void)) {
 {
     NSMutableArray *articlesArray = [NSMutableArray array];
     for (SIQFAQArticle *article in articles){
-        
+
         NSMutableDictionary *articleDict = [NSMutableDictionary dictionary];
-        
+
         NSInteger i = 0;
         if([article id] != nil){
             articleDict = [self getFAQArticleObject:article];
@@ -838,10 +844,10 @@ void mainThread(void (^block)(void)) {
 {
     NSMutableDictionary *chatDict = [NSMutableDictionary dictionary];
     if([chat referenceID] != nil){
-        
+
         NSString *id = [chat referenceID];
         [chatDict setObject: id  forKey: @"id"];
-        
+
         if([chat attenderEmail] != nil){
             [chatDict setObject: [chat attenderEmail]  forKey: @"attenderEmail"];
         }
@@ -854,9 +860,9 @@ void mainThread(void (^block)(void)) {
         if([chat departmentName] != nil){
             [chatDict setObject: [chat departmentName]  forKey: @"departmentName"];
         }
-        
+
         [chatDict setObject: [NSNumber numberWithBool: [chat isBotAttender]]   forKey: @"isBotAttender"];
-        
+
         if([chat lastMessage] != nil){
             [chatDict setObject: [chat lastMessage]  forKey: @"lastMessage"];
         }
@@ -866,17 +872,17 @@ void mainThread(void (^block)(void)) {
         if([chat question] != nil){
             [chatDict setObject: [chat question]  forKey: @"question"];
         }
-        
+
         if([chat feedback] != nil){
             [chatDict setObject:[chat feedback] forKey:@"feedback"];
         }
-        
+
         if([chat rating] != nil){
             [chatDict setObject:[chat rating] forKey:@"rating"];
         }
-        
+
         ChatStatus status = [chat status];
-        
+
         if (status == ChatStatusTriggered){
             [chatDict setObject: TYPE_TRIGGERED  forKey: @"status"];
         }else if (status == ChatStatusProactive){
@@ -890,13 +896,13 @@ void mainThread(void (^block)(void)) {
         }else if (status == ChatStatusClosed){
             [chatDict setObject: TYPE_CLOSED  forKey: @"status"];
         }
-        
+
         if([chat lastMessageTime] != nil){
             NSDate *messageTime = [chat lastMessageTime];
             int time = (int)[messageTime timeIntervalSince1970];
             [chatDict setObject: @(time) forKey: @"lastMessageTime"];
         }
-        
+
         [chatDict setObject: @([chat unreadCount])  forKey: @"unreadCount"];
     }
     return chatDict;
@@ -905,7 +911,7 @@ void mainThread(void (^block)(void)) {
 - (NSMutableArray *)getChatList: (NSArray<SIQVisitorChat *> *) chats
 {
     NSMutableArray *chatsArray = [NSMutableArray array];
-    
+
     NSInteger i = 0;
     for (SIQVisitorChat *chat in chats){
         NSMutableDictionary *chatDict = [NSMutableDictionary dictionary];
@@ -1004,7 +1010,7 @@ void mainThread(void (^block)(void)) {
 }
 
 - (void)handleTriggerWithName:(NSString *)name visitorInformation:(SIQVisitor *)visitorInformation{
-    
+
 }
 
 @end

@@ -155,6 +155,9 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
           if (action.equals("openChatWithID")) {
               this.openChatWithID(data.get(0).toString());
           }
+          if (action.equals("openNewChat")) {
+              this.openNewChat();
+          }
           if (action.equals("showOfflineMessage")) {
               this.showOfflineMessage((boolean)data.get(0));
           }
@@ -459,6 +462,15 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
       handler.post(new Runnable() {
           public void run() {
               ZohoSalesIQ.Chat.open(chat_id);
+          }
+      });
+  }
+
+  private void openNewChat() {
+      Handler handler = new Handler(Looper.getMainLooper());
+      handler.post(new Runnable() {
+          public void run() {
+              ZohoSalesIQ.Chat.openNewChat();
           }
       });
   }
