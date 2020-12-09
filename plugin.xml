@@ -6,6 +6,7 @@
   </js-module>
 
   <platform name="ios">
+    
     <podspec>
         <config>
             <source url="https://github.com/CocoaPods/Specs.git"/>
