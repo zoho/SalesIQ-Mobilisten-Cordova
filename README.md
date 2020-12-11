@@ -1,3 +1,5 @@
+[![SupportedLanguages](https://img.shields.io/badge/Platforms-iOS%20%7C%20%20Android-green.svg)](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-installation.html) [![Version](https://img.shields.io/badge/version-1.1.5-blue.svg)](https://mobilisten.io/)
+
 # SalesIQ Mobilisten SDK - Cordova Plugin
 
 Connect with customers at every step of their journey. Give them the best in-app live chat experience with Mobilisten. Mobilisten enables customers to reach you from any screen on your app, get their questions answered, and make better purchase decisions.  
