@@ -23,17 +23,17 @@ You can integrate Mobilisten to your existing [Apache Cordova](https://cordova.a
 #### Installation and Integration Steps
 
 **Cordova Projects**
-```shell
+```ruby
 cordova plugin add https://github.com/zoho/SalesIQ-Mobilisten-Cordova.git
 ```
 
 **Ionic Projects**
-```
+```ruby
 ionic cordova plugin add https://github.com/zoho/SalesIQ-Mobilisten-Cordova.git
 ```
 
 **Ionic React Projects using Capacitor**
-```
+```ruby
 npm install https://github.com/zoho/SalesIQ-Mobilisten-Cordova.git
 npx cap sync
 ```
