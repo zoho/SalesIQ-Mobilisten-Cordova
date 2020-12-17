@@ -1,7 +1,7 @@
 {
   "name": "cordova-zohosalesiq-mobilisten",
   "version": "1.1.6",
-  "description": "ZohoSalesIQ Mobilisten plugin for Cordova",
+  "description": "A Cordova plugin for the Zoho SalesIQ Mobilisten SDK",
   "cordova": {
     "id": "cordova-zohosalesiq-mobilisten",
     "platforms": [
@@ -16,7 +16,13 @@
   "keywords": [
     "ecosystem:cordova",
     "cordova-ios",
-    "cordova-android"
+    "cordova-android",
+    "chat-sdk",
+    "mobilisten",
+    "support-sdk",
+    "customer-support",
+    "inapp-support",
+    "chat"
   ],
   "license": "MIT"
 }
