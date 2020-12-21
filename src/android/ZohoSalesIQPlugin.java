@@ -81,6 +81,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
     private static final String FEEDBACK_RECEIVED = "FEEDBACK_RECEIVED";         // No I18N
     private static final String RATING_RECEIVED = "RATING_RECEIVED";         // No I18N
     private static final String PERFORM_CHATACTION = "PERFORM_CHATACTION";         // No I18N
+    private static final String CUSTOMTRIGGER = "CUSTOMTRIGGER";         // No I18N
 
     private static final String TYPE_OPEN = "OPEN";         // No I18N
     private static final String TYPE_CONNECTED = "CONNECTED";         // No I18N
@@ -205,6 +206,9 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
           }
           if (action.equals("setCustomAction")) {
               this.setCustomAction(data.get(0).toString());
+          }
+          if (action.equals("performCustomAction")) {
+              this.performCustomAction(data.get(0).toString());
           }
           if (action.equals("enableInAppNotification")) {
               this.enableInAppNotification();
@@ -629,6 +633,15 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
       });
   }
 
+  private void performCustomAction(final String actionName) {
+      Handler handler = new Handler(Looper.getMainLooper());
+      handler.post(new Runnable() {
+          public void run() {
+              ZohoSalesIQ.Tracking.setCustomAction(actionName);
+          }
+      });
+  }
+
   private void enableInAppNotification() {
       Handler handler = new Handler(Looper.getMainLooper());
       handler.post(new Runnable() {
@@ -1044,16 +1057,12 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
                           }
                       });
                   }
-                  if (callbackContext != null) {
-                      callbackContext.success();
-                  }
+                  callbackContext.success();
               }
 
               @Override
               public void onInitError() {
-                if (callbackContext != null) {
-                    callbackContext.error(SalesIQConstants.LocalAPI.NO_INTERNET_MESSAGE);
-                }
+                  callbackContext.error(SalesIQConstants.LocalAPI.NO_INTERNET_MESSAGE);
               }
           });
           ZohoSalesIQ.setPlatformName("Cordova-Android");         // No I18N
@@ -1150,6 +1159,61 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
         return articleMap;
     }
 
+    public HashMap getVisitorInfoObject(SIQVisitor siqVisitor){
+        HashMap visitorInfoMap = new HashMap();
+        if (siqVisitor.getName() != null) {
+            visitorInfoMap.put("name", siqVisitor.getName());         // No I18N
+        }
+        if (siqVisitor.getEmail() != null) {
+            visitorInfoMap.put("email", siqVisitor.getEmail());         // No I18N
+        }
+        if (siqVisitor.getPhone() != null) {
+            visitorInfoMap.put("phone", siqVisitor.getPhone());         // No I18N
+        }
+        visitorInfoMap.put("numberOfChats", LiveChatUtil.getString(siqVisitor.getNumberOfChats()));         // No I18N
+        if (siqVisitor.getCity() != null) {
+            visitorInfoMap.put("city", siqVisitor.getCity());         // No I18N
+        }
+        if (siqVisitor.getIp() != null) {
+            visitorInfoMap.put("ip", siqVisitor.getIp());         // No I18N
+        }
+        if (siqVisitor.getFirstVisitTime() != null) {
+            Date firstVisitTime = siqVisitor.getFirstVisitTime();
+            visitorInfoMap.put("firstVisitTime", LiveChatUtil.getString(firstVisitTime.getTime()));         // No I18N
+        }
+        if (siqVisitor.getLastVisitTime() != null) {
+            Date lastVisitTime = siqVisitor.getLastVisitTime();
+            visitorInfoMap.put("lastVisitTime", LiveChatUtil.getString(lastVisitTime.getTime()));         // No I18N
+        }
+        if (siqVisitor.getRegion() != null) {
+            visitorInfoMap.put("region", siqVisitor.getRegion());         // No I18N
+        }
+        if (siqVisitor.getOs() != null) {
+            visitorInfoMap.put("os", siqVisitor.getOs());         // No I18N
+        }
+        if (siqVisitor.getCountryCode() != null) {
+            visitorInfoMap.put("countryCode", siqVisitor.getCountryCode());         // No I18N
+        }
+        if (siqVisitor.getBrowser() != null) {
+            visitorInfoMap.put("browser", siqVisitor.getBrowser());         // No I18N
+        }
+        if (siqVisitor.getTotalTimeSpent() != null) {
+            visitorInfoMap.put("totalTimeSpent", siqVisitor.getTotalTimeSpent());         // No I18N
+        }
+        visitorInfoMap.put("numberOfVisits", LiveChatUtil.getString(siqVisitor.getNumberOfVisits()));         // No I18N
+        visitorInfoMap.put("noOfDaysVisited",LiveChatUtil.getString(siqVisitor.getNoOfDaysVisited()));         // No I18N
+        if (siqVisitor.getState() != null) {
+            visitorInfoMap.put("state", siqVisitor.getState());         // No I18N
+        }
+        if (siqVisitor.getSearchEngine() != null) {
+            visitorInfoMap.put("searchEngine", siqVisitor.getSearchEngine());         // No I18N
+        }
+        if (siqVisitor.getSearchQuery() != null) {
+            visitorInfoMap.put("searchQuery", siqVisitor.getSearchQuery());         // No I18N
+        }
+        return visitorInfoMap;
+    }
+
     public class ZohoSalesIQPluginListener implements SalesIQListener, SalesIQChatListener, SalesIQFAQListener, SalesIQActionListener {
 
         @Override
@@ -1225,7 +1289,12 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
 
         @Override
         public void handleTrigger(String triggerName, SIQVisitor visitor) {
-
+            HashMap visitorMap = new HashMap();
+            visitorMap.put("triggerName",triggerName);
+            visitorMap.put("visitorInformation",getVisitorInfoObject(visitor));
+            Gson gson = new Gson();
+            String json = gson.toJson(visitorMap);
+            eventEmitter(CUSTOMTRIGGER, json);
         }
 
         @Override
