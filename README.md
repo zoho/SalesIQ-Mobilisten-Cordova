@@ -1,4 +1,4 @@
-[![SupportedLanguages](https://img.shields.io/badge/Platforms-iOS%20%7C%20%20Android-green.svg)](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-installation.html) [![Version](https://img.shields.io/badge/version-1.1.7-blue.svg)](https://mobilisten.io/)
+[![SupportedLanguages](https://img.shields.io/badge/Platforms-iOS%20%7C%20%20Android-green.svg)](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-installation.html) [![Version](https://img.shields.io/badge/version-1.1.8-blue.svg)](https://mobilisten.io/)
 
 # SalesIQ Mobilisten SDK - Cordova Plugin
 

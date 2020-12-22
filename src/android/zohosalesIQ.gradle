@@ -2,8 +2,6 @@ repositories {
     google()
     jcenter()
     maven { url "https://maven.zohodl.com/"}
-//    maven { url "http://build/zoho_android/android_salesiq_embed/webhost/testingBranch/Oct_23_2020/"}
-//    maven { url "http://build/zoho_android/android_livechat_embed/webhost/testingBranch/Oct_23_2020/"}
 }
 
 dependencies {
