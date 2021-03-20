@@ -270,6 +270,9 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
           if (action.equals("setVisitorLocation")) {
               this.setVisitorLocation((JSONObject)data.get(0));
           }
+          if (action.equals("syncThemeWithOS")) {
+            this.syncThemeWithOS((boolean)data.get(0));
+          }
           return true;
       }
       return false;
@@ -1022,6 +1025,15 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
       ZohoSalesIQ.Visitor.setLocation(siqVisitorLocation);
   }
 
+  private void syncThemeWithOS(boolean sync){
+    Handler handler = new Handler(Looper.getMainLooper());
+    handler.post(new Runnable() {
+      public void run() {
+        ZohoSalesIQ.syncThemeWithOS(sync);
+      }
+    });
+  }
+
   public static void handleNotification(final Application application, final Map extras, final CallbackContext callbackContext) {
       SharedPreferences sharedPreferences = application.getSharedPreferences("siq_session", 0);         // No I18N
       final String appKey = sharedPreferences.getString("salesiq_appkey", null);         // No I18N
@@ -1058,16 +1070,12 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
                           }
                       });
                   }
-                  if (callbackContext != null) {
-                      callbackContext.success();
-                  }
+                  callbackContext.success();
               }
 
               @Override
               public void onInitError() {
-                if (callbackContext != null) {
-                    callbackContext.error(SalesIQConstants.LocalAPI.NO_INTERNET_MESSAGE);
-                }
+                  callbackContext.error(SalesIQConstants.LocalAPI.NO_INTERNET_MESSAGE);
               }
           });
           ZohoSalesIQ.setPlatformName("Cordova-Android");         // No I18N

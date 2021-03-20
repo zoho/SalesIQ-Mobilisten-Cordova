@@ -1,21 +1,21 @@
 <?xml version='1.0' encoding='utf-8'?>
-<plugin id="cordova-zohosalesiq-mobilisten" version="1.1.9" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+<plugin id="cordova-zohosalesiq-mobilisten" version="2.0.0" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
   <name>ZohoSalesIQ</name>
   <js-module name="ZohoSalesIQ" src="www/ZohoSalesIQ.js">
     <clobbers target="ZohoSalesIQ" />
   </js-module>
 
   <platform name="ios">
-
+    
     <podspec>
         <config>
             <source url="https://github.com/CocoaPods/Specs.git"/>
         </config>
         <pods use-frameworks="true">
-            <pod name="MobilistenBeta" options="podspec: 'https://raw.githubusercontent.com/zoho/Mobilisten-iOS-Beta/v3.5.15/MobilistenBeta.podspec'" />
+            <pod name="Mobilisten" options="podspec: 'https://raw.githubusercontent.com/zoho/SalesIQ-Mobilisten-iOS/v3.6.4/Mobilisten.podspec'" />
         </pods>
     </podspec>
-
+    
     <config-file target="*-Info.plist" parent="NSPhotoLibraryAddUsageDescription">
         <string>We would like access to save media to your photo library.</string>
     </config-file>
