@@ -102,11 +102,11 @@ NSString *serviceName = @"ZohoSalesIQ";
 }
 
 - (void)enableVoiceMessages:(CDVInvokedUrlCommand*)command{
-    [[ZohoSalesIQ Chat] setVisibility:ChatComponentVoiceMessages visible:YES];
+    // API Removed.
 }
 
 - (void)disableVoiceMessages:(CDVInvokedUrlCommand*)command{
-    [[ZohoSalesIQ Chat] setVisibility:ChatComponentVoiceMessages visible:NO];
+    // API Removed.
 }
 
 - (void)enablePreChatForms:(CDVInvokedUrlCommand*)command{
@@ -160,7 +160,7 @@ NSString *serviceName = @"ZohoSalesIQ";
         [[ZohoSalesIQ Chat] setLanguage:LanguageHungarian];
     }else if([language_code isEqualToString:@"zh"]){
         [[ZohoSalesIQ Chat] setLanguage:LanguageChinese];
-    }else if([language_code isEqualToString:@"ha"]){
+    }else if([language_code isEqualToString:@"he"]){
         [[ZohoSalesIQ Chat] setLanguage:LanguageHebrew];
     }else if([language_code isEqualToString:@"ga"]){
         [[ZohoSalesIQ Chat] setLanguage:LanguageIrish];
@@ -1094,6 +1094,10 @@ void mainThread(void (^block)(void)) {
 
 - (void)chatOpenedWithChat:(SIQVisitorChat * _Nullable)chat {
     [self sendEvent:CHAT_OPENED body:[self getChatObject:chat]];
+}
+
+- (void)chatQueuePositionChangedWithChat:(SIQVisitorChat *)chat{
+    // Add Implementation.
 }
 
 - (void)chatRatingRecievedWithChat:(SIQVisitorChat * _Nullable)chat {
