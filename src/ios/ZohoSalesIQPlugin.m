@@ -34,6 +34,7 @@ NSString *CHAT_CLOSED = @"CHAT_CLOSED";
 NSString *FEEDBACK_RECEIVED = @"FEEDBACK_RECEIVED";
 NSString *CHAT_MISSED = @"CHAT_MISSED";
 NSString *CHAT_OPENED = @"CHAT_OPENED";
+NSString *CHAT_QUEUE_POSITION_CHANGED = @"CHAT_QUEUE_POSITION_CHANGED";
 NSString *RATING_RECEIVED = @"RATING_RECEIVED";
 NSString *CHAT_REOPENED = @"CHAT_REOPENED";
 NSString *PERFORM_CHATACTION = @"PERFORM_CHATACTION";
@@ -99,14 +100,6 @@ NSString *serviceName = @"ZohoSalesIQ";
 
 - (void)disableScreenshotOption:(CDVInvokedUrlCommand*)command{
     [[ZohoSalesIQ Chat] setVisibility:ChatComponentScreenshotOption visible:NO];
-}
-
-- (void)enableVoiceMessages:(CDVInvokedUrlCommand*)command{
-    // API Removed.
-}
-
-- (void)disableVoiceMessages:(CDVInvokedUrlCommand*)command{
-    // API Removed.
 }
 
 - (void)enablePreChatForms:(CDVInvokedUrlCommand*)command{
@@ -242,17 +235,14 @@ NSString *serviceName = @"ZohoSalesIQ";
 }
 
 - (void)setThemeColorforAndroid:(CDVInvokedUrlCommand*)command{
-    NSString *color_code = [command.arguments objectAtIndex:1];
-    if(color_code != nil){
-        unsigned rgbValue = 0;
-        NSScanner *scanner = [NSScanner scannerWithString:color_code];
-        [scanner setScanLocation:1];
-        [scanner scanHexInt:&rgbValue];
-        UIColor *themeColor = [UIColor colorWithRed:((rgbValue & 0xFF0000) >> 16)/255.0 green:((rgbValue & 0xFF00) >> 8)/255.0 blue:(rgbValue & 0xFF)/255.0 alpha:1.0];
-        if(themeColor != nil){
-            [[ZohoSalesIQ Chat] setThemeColor: themeColor];
-        }
-    }
+    // No Implementation
+}
+
+- (void)isMultipleOpenChatRestricted:(CDVInvokedUrlCommand*)command{
+    BOOL restricted = [[ZohoSalesIQ Chat] multipleOpenRestricted];
+    CDVPluginResult* pluginResult = nil;
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:restricted];
+    [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
 - (void)endChat:(CDVInvokedUrlCommand*)command{
@@ -339,6 +329,22 @@ NSString *serviceName = @"ZohoSalesIQ";
             }
         }];
     }
+}
+
+- (void)getDepartments:(CDVInvokedUrlCommand*)command{
+    [[ZohoSalesIQ Chat] getDepartmentsWithCompletion:^(NSError * _Nullable error, NSArray<SIQDepartment *> * _Nullable departments) {
+        CDVPluginResult* pluginResult = nil;
+        if(error != nil){
+            NSMutableDictionary *errorDictionary = [self getErrorObject:error];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        }else{
+            NSMutableArray *departmentsArray = [NSMutableArray array];
+            departmentsArray = [self getDepartmentList:departments];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:departmentsArray];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+    }];
 }
 
 - (void)show:(CDVInvokedUrlCommand*)command{
@@ -557,12 +563,30 @@ NSString *serviceName = @"ZohoSalesIQ";
 - (void)registerVisitor:(CDVInvokedUrlCommand*)command{
     NSString *visitorID = [command.arguments objectAtIndex:0];
     if(visitorID!=nil){
-        [ZohoSalesIQ registerVisitor:visitorID];
+        [ZohoSalesIQ registerVisitor:visitorID completion:^(BOOL success) {
+            CDVPluginResult* pluginResult = nil;
+            if(success == true){
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:YES];
+                [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+            }else{
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsBool:NO];
+                [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+            }
+        }];
     }
 }
 
 - (void)unregisterVisitor:(CDVInvokedUrlCommand*)command{
-    [ZohoSalesIQ unregisterVisitor];
+    [ZohoSalesIQ unregisterVisitorWithCompletion:^(BOOL success) {
+        CDVPluginResult* pluginResult = nil;
+        if(success == true){
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:YES];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        }else{
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsBool:NO];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+    }];
 }
 
 //MARK:- VISITOR TRACKING APIS
@@ -913,6 +937,12 @@ void mainThread(void (^block)(void)) {
         }
         
         [chatDict setObject: @([chat unreadCount])  forKey: @"unreadCount"];
+        
+        NSInteger queuePosition = [chat queuePosition];
+        if(queuePosition > 0) {
+            [chatDict setObject: @(queuePosition)  forKey: @"queuePosition"];
+        }
+        
     }
     return chatDict;
 }
@@ -1023,19 +1053,54 @@ void mainThread(void (^block)(void)) {
     return visitorDict;
 }
 
+- (NSMutableDictionary *)getDepartmentObject: (SIQDepartment*)argument {
+    
+    NSMutableDictionary *departmentDictionary = [NSMutableDictionary dictionary];
+    
+    NSString *departmentName = [argument name];
+    NSString *departmentID = [argument id];
+    BOOL departmentAvailable = [argument available];
+    
+    if(departmentID != nil){
+        [departmentDictionary setObject:departmentID forKey:@"id"];
+    }
+    
+    if(departmentName != nil){
+        [departmentDictionary setObject:departmentName forKey:@"name"];
+    }
+    
+    [departmentDictionary setObject: [NSNumber numberWithBool: departmentAvailable]   forKey: @"available"];
+    
+    return departmentDictionary;
+    
+}
+
 
 - (NSMutableArray *)getChatList: (NSArray<SIQVisitorChat *> *) chats
 {
     NSMutableArray *chatsArray = [NSMutableArray array];
     
     NSInteger i = 0;
-    for (SIQVisitorChat *chat in chats){
+    for (SIQVisitorChat *chat in chats) {
         NSMutableDictionary *chatDict = [NSMutableDictionary dictionary];
         chatDict = [self getChatObject:chat];
         [chatsArray insertObject:chatDict atIndex:i];
         i = i + 1;
     }
     return chatsArray;
+}
+
+- (NSMutableArray *)getDepartmentList: (NSArray<SIQDepartment *> *) departments
+{
+    NSMutableArray *departmentsArray = [NSMutableArray array];
+    NSInteger i = 0;
+    for (SIQDepartment *department in departments) {
+        NSMutableDictionary *departmentDictionary = [NSMutableDictionary dictionary];
+        departmentDictionary = [self getDepartmentObject:department];
+        [departmentsArray insertObject:departmentDictionary atIndex:i];
+        i = i + 1;
+    }
+    return departmentsArray;
 }
 
 
@@ -1096,8 +1161,8 @@ void mainThread(void (^block)(void)) {
     [self sendEvent:CHAT_OPENED body:[self getChatObject:chat]];
 }
 
-- (void)chatQueuePositionChangedWithChat:(SIQVisitorChat *)chat{
-    // Add Implementation.
+- (void)chatQueuePositionChangedWithChat:(SIQVisitorChat *)chat {
+    [self sendEvent:CHAT_QUEUE_POSITION_CHANGED body:[self getChatObject:chat]];
 }
 
 - (void)chatRatingRecievedWithChat:(SIQVisitorChat * _Nullable)chat {

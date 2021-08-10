@@ -17,15 +17,18 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.zoho.commons.ChatComponent;
 import com.zoho.commons.OnInitCompleteListener;
+import com.zoho.livechat.android.SIQDepartment;
 import com.zoho.livechat.android.SIQVisitor;
 import com.zoho.livechat.android.SIQVisitorLocation;
 import com.zoho.livechat.android.SalesIQCustomAction;
 import com.zoho.livechat.android.VisitorChat;
+import com.zoho.livechat.android.ZohoLiveChat;
 import com.zoho.livechat.android.constants.ConversationType;
 import com.zoho.livechat.android.constants.SalesIQConstants;
 import com.zoho.livechat.android.exception.InvalidEmailException;
 import com.zoho.livechat.android.exception.InvalidVisitorIDException;
 import com.zoho.livechat.android.listeners.ConversationListener;
+import com.zoho.livechat.android.listeners.DepartmentListener;
 import com.zoho.livechat.android.listeners.FAQCategoryListener;
 import com.zoho.livechat.android.listeners.FAQListener;
 import com.zoho.livechat.android.listeners.OpenArticleListener;
@@ -83,6 +86,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
     private static final String RATING_RECEIVED = "RATING_RECEIVED";         // No I18N
     private static final String PERFORM_CHATACTION = "PERFORM_CHATACTION";         // No I18N
     private static final String CUSTOMTRIGGER = "CUSTOMTRIGGER";         // No I18N
+    private static final String CHAT_QUEUE_POSITION_CHANGED = "CHAT_QUEUE_POSITION_CHANGED";         // No I18N
 
     private static final String TYPE_OPEN = "OPEN";         // No I18N
     private static final String TYPE_CONNECTED = "CONNECTED";         // No I18N
@@ -108,12 +112,6 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
           }
           if (action.equals("disableScreenshotOption")) {
               this.disableScreenshotOption();
-          }
-          if (action.equals("enableVoiceMessages")) {
-              this.enableVoiceMessages();
-          }
-          if (action.equals("disableVoiceMessages")) {
-              this.disableVoiceMessages();
           }
           if (action.equals("enablePreChatForms")) {
               this.enablePreChatForms();
@@ -237,6 +235,9 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
           if (action.equals("getChatsWithFilter")) {
               this.getChatsWithFilter(LiveChatUtil.getString(data.get(0)),callbackContext);
           }
+          if (action.equals("getDepartments")) {
+              this.getDepartments(callbackContext);
+          }
           if (action.equals("getArticles")) {
               this.getArticles(callbackContext);
           }
@@ -273,6 +274,9 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
           if (action.equals("syncThemeWithOS")) {
             this.syncThemeWithOS((boolean)data.get(0));
           }
+          if (action.equals("isMultipleOpenChatRestricted")) {
+            this.isMultipleOpenChatRestricted(callbackContext);
+          }
           return true;
       }
       return false;
@@ -307,24 +311,6 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
       handler.post(new Runnable() {
           public void run() {
               ZohoSalesIQ.Chat.setVisibility(ChatComponent.screenshot, false);
-          }
-      });
-  }
-
-  private void enableVoiceMessages(){
-      Handler handler = new Handler(Looper.getMainLooper());
-      handler.post(new Runnable() {
-          public void run() {
-              ZohoSalesIQ.Chat.setVisibility(ChatComponent.voiceMessage, true);
-          }
-      });
-  }
-
-  private void disableVoiceMessages(){
-      Handler handler = new Handler(Looper.getMainLooper());
-      handler.post(new Runnable() {
-          public void run() {
-              ZohoSalesIQ.Chat.setVisibility(ChatComponent.voiceMessage, false);
           }
       });
   }
@@ -782,15 +768,43 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
                     }
                 }
                 catch (Exception e){
-                    HashMap errorMap = new HashMap();
-                    errorMap.put("code", SalesIQConstants.LocalAPI.TRYCATCH_EXCEPTION_CODE);         // No I18N
-                    errorMap.put("message", TRYCATCH_EXCEPTION);         // No I18N
-                    JSONObject errorObject = new JSONObject(errorMap);
-                    listCallback.error(errorObject);
+                    LiveChatUtil.log(e);
                 }
             }
         });
     }
+
+  private void getDepartments(final CallbackContext departmentCallback) {
+    Handler handler = new Handler(Looper.getMainLooper());
+    handler.post(new Runnable() {
+      public void run() {
+        ZohoLiveChat.Chat.getDepartments(new DepartmentListener() {
+          @Override
+          public void onSuccess(ArrayList<SIQDepartment> departmentsList) {
+            if (departmentsList != null){
+              ArrayList<HashMap> array = new ArrayList<>();
+              for (int i=0; i<departmentsList.size(); i++){
+                SIQDepartment department = departmentsList.get(i);
+                HashMap departmentMap = getDepartmentMapObject(department);
+                array.add(departmentMap);
+              }
+              JSONArray jsonArray = new JSONArray(array);
+              departmentCallback.success(jsonArray);
+            }
+          }
+
+          @Override
+          public void onFailure(int code, String message) {
+            HashMap errorMap = new HashMap();
+            errorMap.put("code", code);         // No I18N
+            errorMap.put("message", message);         // No I18N
+            JSONObject errorObject = new JSONObject(errorMap);
+            departmentCallback.error(errorObject);
+          }
+        });
+      }
+    });
+  }
 
     private void getArticles(final CallbackContext articlesCallback) {
         Handler handler = new Handler(Looper.getMainLooper());
@@ -1034,6 +1048,19 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
     });
   }
 
+  private void isMultipleOpenChatRestricted(CallbackContext callbackContext){
+    Handler handler = new Handler(Looper.getMainLooper());
+    handler.post(new Runnable() {
+      public void run() {
+        if (ZohoSalesIQ.Chat.isMultipleOpenRestricted()){
+          callbackContext.success(1);
+        } else {
+          callbackContext.success(0);
+        }
+      }
+    });
+  }
+
   public static void handleNotification(final Application application, final Map extras, final CallbackContext callbackContext) {
       SharedPreferences sharedPreferences = application.getSharedPreferences("siq_session", 0);         // No I18N
       final String appKey = sharedPreferences.getString("salesiq_appkey", null);         // No I18N
@@ -1118,6 +1145,9 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
         visitorMap.put("id", chat.getChatID());         // No I18N
         visitorMap.put("unreadCount", chat.getUnreadCount());         // No I18N
         visitorMap.put("isBotAttender", chat.isBotAttender());         // No I18N
+        if (chat.getQueuePosition() > 0) {
+          visitorMap.put("queuePosition", chat.getQueuePosition());         // No I18N
+        }
         if (chat.getQuestion() != null){
             visitorMap.put("question", chat.getQuestion());         // No I18N
         }
@@ -1155,6 +1185,14 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
 
         return visitorMap;
     }
+
+  public HashMap getDepartmentMapObject(SIQDepartment department) {
+    HashMap departmentMap = new HashMap();
+    departmentMap.put("id", department.id);                                                            // No I18N
+    departmentMap.put("name", department.name);                                                        // No I18N
+    departmentMap.put("available", department.available);                                              // No I18N
+    return departmentMap;
+  }
 
     public HashMap getArticleMapObject(SalesIQArticle article) {
         HashMap articleMap = new HashMap();
@@ -1237,7 +1275,15 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
             eventEmitter(FEEDBACK_RECEIVED, json);
         }
 
-        @Override
+      @Override
+      public void handleQueuePositionChange(VisitorChat visitorChat) {
+        HashMap visitorMap = getChatMapObject(visitorChat);
+        Gson gson = new Gson();
+        String json = gson.toJson(visitorMap);
+        eventEmitter(CHAT_QUEUE_POSITION_CHANGED, json);
+      }
+
+      @Override
         public void handleRating(VisitorChat visitorChat) {
             HashMap visitorMap = getChatMapObject(visitorChat);
             Gson gson = new Gson();

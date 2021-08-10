@@ -8,6 +8,7 @@ exports.EVENT = {
     CHATVIEW_OPENED: "CHATVIEW_OPENED", // No I18N
     CHATVIEW_CLOSED: "CHATVIEW_CLOSED", // No I18N
     CHAT_OPENED: "CHAT_OPENED", // No I18N
+    CHAT_QUEUE_POSITION_CHANGED: "CHAT_QUEUE_POSITION_CHANGED", // No I18N
     CHAT_CLOSED: "CHAT_CLOSED", // No I18N
     CHAT_MISSED: "CHAT_MISSED", // No I18N
     CHAT_ATTENDED: "CHAT_ATTENDED", // No I18N
@@ -47,14 +48,6 @@ exports.enableScreenshotOption = function (success, error) {
 
 exports.disableScreenshotOption = function (success, error) {
     exec(success, error, serviceName, 'disableScreenshotOption', []);         // No I18N
-};
-
-exports.enableVoiceMessages = function (success, error) {
-    exec(success, error, serviceName, 'enableVoiceMessages', []);         // No I18N
-};
-
-exports.disableVoiceMessages = function (success, error) {
-    exec(success, error, serviceName, 'disableVoiceMessages', []);         // No I18N
 };
 
 exports.enablePreChatForms = function (success, error) {
@@ -127,6 +120,10 @@ exports.getChats = function (success, error) {
 
 exports.getChatsWithFilter = function (type, success, error) {
     exec(success, error, serviceName, 'getChatsWithFilter', [type]);         // No I18N
+};
+
+exports.getDepartments = function (success, error) {
+    exec(success, error, serviceName, 'getDepartments', []);         // No I18N
 };
 
 exports.show = function (success, error) {
@@ -265,6 +262,10 @@ exports.openArticle = function (articleID, success, error) {
 
 exports.syncThemeWithOS = function (sync, success, error) {
     exec(success, error, serviceName, 'syncThemeWithOS', [sync]);         // No I18N
+};
+
+exports.isMultipleOpenChatRestricted = function (success, error) {
+    exec(success, error, serviceName, 'isMultipleOpenChatRestricted', []);         // No I18N
 };
 
 //MARK:- EVENT HANDLER WORKING PROTOTYPE
