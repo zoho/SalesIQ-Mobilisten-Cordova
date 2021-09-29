@@ -1,4 +1,4 @@
-[![SupportedLanguages](https://img.shields.io/badge/Platforms-iOS%20%7C%20%20Android-green.svg)](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-installation.html) [![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://mobilisten.io/) [![Mobilisten NPM CD](https://github.com/zoho/SalesIQ-Mobilisten-Cordova/workflows/Mobilisten%20NPM%20CD/badge.svg)](https://github.com/zoho/SalesIQ-Mobilisten-Cordova/actions?query=workflow%3A%22Mobilisten+NPM+CD%22)
+[![SupportedLanguages](https://img.shields.io/badge/Platforms-iOS%20%7C%20%20Android-green.svg)](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-installation.html) [![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://mobilisten.io/) [![Mobilisten NPM CD](https://github.com/zoho/SalesIQ-Mobilisten-Cordova/workflows/Mobilisten%20NPM%20CD/badge.svg)](https://github.com/zoho/SalesIQ-Mobilisten-Cordova/actions?query=workflow%3A%22Mobilisten+NPM+CD%22)
 
 # SalesIQ Mobilisten SDK - Cordova Plugin
 
