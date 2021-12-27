@@ -434,7 +434,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
       handler.post(new Runnable() {
           public void run() {
               Activity activity = cordova.getActivity();
-              if (activity != null) {
+              if (activity != null && ZohoSalesIQ.getApplicationManager() != null) {
                   ZohoSalesIQ.getApplicationManager().setCurrentActivity(activity);
                   ZohoSalesIQ.Chat.showOperatorImageInLauncher(show);
               }
@@ -493,7 +493,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
       handler.post(new Runnable() {
           public void run() {
               Activity activity = cordova.getActivity();
-              if (activity != null) {
+              if (activity != null && ZohoSalesIQ.getApplicationManager() != null) {
                   ZohoSalesIQ.getApplicationManager().setCurrentActivity(activity);
                   ZohoSalesIQ.getApplicationManager().refreshChatBubble();
               }
@@ -1063,17 +1063,19 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
 
   public static void handleNotification(final Application application, final Map extras, final CallbackContext callbackContext) {
       SharedPreferences sharedPreferences = application.getSharedPreferences("siq_session", 0);         // No I18N
-      final String appKey = sharedPreferences.getString("salesiq_appkey", null);         // No I18N
-      final String accessKey = sharedPreferences.getString("salesiq_accesskey", null);         // No I18N
-      if (appKey != null && accessKey != null) {
+      if (sharedPreferences != null) {
+        final String appKey = sharedPreferences.getString("salesiq_appkey", null);         // No I18N
+        final String accessKey = sharedPreferences.getString("salesiq_accesskey", null);         // No I18N
+        if (appKey != null && accessKey != null) {
           Handler handler = new Handler(Looper.getMainLooper());
           handler.post(new Runnable() {
-              public void run() {
-                  initSalesIQ(application, null, appKey, accessKey, callbackContext);
-                  ZohoSalesIQ.Notification.handle(application, extras, 0);
-              }
+            public void run() {
+              initSalesIQ(application, null, appKey, accessKey, callbackContext);
+              ZohoSalesIQ.Notification.handle(application, extras, 0);
+            }
           });
-      }
+        }
+    }
   }
 
   public static void enablePush(String token, Boolean testdevice) {
@@ -1089,7 +1091,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
                   if (fcmtoken != null) {
                       ZohoSalesIQ.Notification.enablePush(fcmtoken, istestdevice);
                   }
-                  if (activity != null) {
+                  if (activity != null && ZohoSalesIQ.getApplicationManager() != null) {
                       Handler handler = new Handler(Looper.getMainLooper());
                       handler.post(new Runnable() {
                           public void run() {
@@ -1106,7 +1108,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
               }
           });
           ZohoSalesIQ.setPlatformName("Cordova-Android");         // No I18N
-          if (activity != null) {
+          if (activity != null && ZohoSalesIQ.getApplicationManager() != null) {
               ZohoSalesIQ.getApplicationManager().setCurrentActivity(activity);
               ZohoSalesIQ.getApplicationManager().setAppActivity(activity);
           }
