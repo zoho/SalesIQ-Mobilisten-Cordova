@@ -1099,12 +1099,16 @@ public class ZohoSalesIQPlugin extends CordovaPlugin{
                           }
                       });
                   }
-                  callbackContext.success();
+                  if (callbackContext != null) {
+                    callbackContext.success();
+                  }
               }
 
               @Override
               public void onInitError() {
-                  callbackContext.error(SalesIQConstants.LocalAPI.NO_INTERNET_MESSAGE);
+                  if (callbackContext != null) {
+                    callbackContext.error(SalesIQConstants.LocalAPI.NO_INTERNET_MESSAGE);
+                  }
               }
           });
           ZohoSalesIQ.setPlatformName("Cordova-Android");         // No I18N
