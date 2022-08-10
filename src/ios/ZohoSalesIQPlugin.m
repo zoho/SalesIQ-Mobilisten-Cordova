@@ -173,6 +173,18 @@ NSString *serviceName = @"ZohoSalesIQ";
         [[ZohoSalesIQ Chat] setLanguage:LanguageSlovenian];
     }else if([language_code isEqualToString:@"hr"]){
         [[ZohoSalesIQ Chat] setLanguage:LanguageCroatian];
+    }else if([language_code isEqualToString:@"zh_tw"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageChineseTraditional];
+    }else if([language_code isEqualToString:@"fil"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageFilipino];
+    }else if([language_code isEqualToString:@"bg"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageBulgarian];
+    }else if([language_code isEqualToString:@"in"] || [language_code isEqualToString:@"id"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageIndonesian];
+    }else if([language_code isEqualToString:@"vi"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageVietnamese];
+    }else if([language_code isEqualToString:@"fi"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageFinnish];
     }else{
         [[ZohoSalesIQ Chat] setLanguage:LanguageEnglish];
     }
