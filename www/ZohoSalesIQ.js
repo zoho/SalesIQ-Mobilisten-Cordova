@@ -23,8 +23,32 @@ exports.EVENT = {
     FEEDBACK_RECEIVED: "FEEDBACK_RECEIVED", // No I18N
     RATING_RECEIVED: "RATING_RECEIVED", // No I18N
     PERFORM_CHATACTION: "PERFORM_CHATACTION",   // No I18N
-    CUSTOMTRIGGER: "CUSTOMTRIGGER" // No I18N
+    CUSTOMTRIGGER: "CUSTOMTRIGGER", // No I18N
+    HANDLE_URL: "HANDLE_URL"    // No I18N
 };
+
+exports.Launcher = {
+    STATIC_MODE: 1,
+    FLOATING_MODE: 2,
+    HORIZONTAL_LEFT: "LAUNCHER_HORIZONTAL_LEFT",
+    HORIZONTAL_RIGHT: "LAUNCHER_HORIZONTAL_RIGHT",
+    VERTICAL_TOP: "LAUNCHER_VERTICAL_TOP",
+    VERTICAL_BOTTOM: "LAUNCHER_VERTICAL_BOTTOM",
+
+    setIconForAndroid: function (resourceName) {
+        exec(null, null, serviceName, 'setLauncherIconForAndroid', [resourceName]);         // No I18N
+    }
+}
+
+exports.Event = {
+    OPEN_URL: "EVENT_OPEN_URL",
+    COMPLETE_CHAT_ACTION: "EVENT_COMPLETE_CHAT_ACTION"
+}
+
+exports.Tab = {
+    CONVERSATIONS: "TAB_CONVERSATIONS",
+    FAQ: "TAB_FAQ"
+}
 
 //Chat Types
 exports.CHATTYPE = {
@@ -271,35 +295,35 @@ exports.isMultipleOpenChatRestricted = function (success, error) {
 //MARK:- EVENT HANDLER WORKING PROTOTYPE
 var listeners = {};
 
-exports.addEventListener = function(name, method) {
+exports.addEventListener = function (name, method) {
     var listener_list = listeners[name]
-    if(!listener_list){
+    if (!listener_list) {
         listener_list = [];
     }
     listener_list.push(method)
     listeners[name] = listener_list;
 };
 
-exports.removeEventListenersForEvent = function(name) {
+exports.removeEventListenersForEvent = function (name) {
     let listener_list = listeners[name]
-    if(listener_list){
+    if (listener_list) {
         delete listeners[name];
     }
 };
 
-exports.removeAllEventListeners = function() {
+exports.removeAllEventListeners = function () {
     listeners = {};
 };
 
 //MARK:- Internal API to send events to listeners
-exports.sendEvent = function(name, body){
-    if(name){
+exports.sendEventToJs = function (name, body) {
+    if (name) {
         let listener_list = listeners[name];
-        if(listener_list){
-            for(var i = 0; i < listener_list.length; i++){
-                if(body){
+        if (listener_list) {
+            for (var i = 0; i < listener_list.length; i++) {
+                if (body) {
                     listener_list[i](parseResult(body));
-                }else{
+                } else {
                     listener_list[i]();
                 }
             }
@@ -307,33 +331,90 @@ exports.sendEvent = function(name, body){
     }
 };
 
-function setPlatform(platform){
+exports.sendEvent = function (name, ...values) {
+    exec(null, null, serviceName, 'sendEvent', [name, values]);         // No I18N
+}
+
+exports.setLauncherPropertiesForAndroid = function (launcherPropertiesMap) {
+    exec(null, null, serviceName, 'setLauncherPropertiesForAndroid', [launcherPropertiesMap]);         // No I18N
+}
+
+exports.printDebugLogsForAndroid = function (value) {
+    exec(null, null, serviceName, 'printDebugLogsForAndroid', [value]);         // No I18N
+}
+
+exports.Chat = {
+    shouldOpenUrl: function (value) {
+        exec(null, null, serviceName, 'shouldOpenUrl', [value]);         // No I18N
+    }
+}
+
+exports.setTabOrder = function (...tabNames) {
+    exec(null, null, serviceName, 'setTabOrder', [tabNames]);         // No I18N
+}
+
+
+exports.Notification = {
+    setIconForAndroid: function (resourceName) {
+        exec(null, null, serviceName, 'setNotificationIconForAndroid', [resourceName]);         // No I18N
+    }
+}
+
+
+exports.Logger = {
+
+    INFO: "INFO",
+    WARNING: "WARNING",
+    ERROR: "ERROR",
+
+    setEnabled: function (value) {
+        exec(null, null, serviceName, 'setLoggerEnabled', [value]);         // No I18N
+    },
+    isEnabled: function (success) {
+        exec(success, null, serviceName, 'isLoggerEnabled', []);         // No I18N
+    },
+    setPathForiOS: function (url) {
+        exec(null, null, serviceName, 'setLoggerPathForiOS', [url]);         // No I18N
+    },
+    clearLogsForiOS: function () {
+        exec(null, null, serviceName, 'clearLogsForiOS', []);         // No I18N
+    },
+    writeLogForiOS: function (log, level, success, error) {
+        exec(success, error, serviceName, 'writeLogForiOS', [log, level]);         // No I18N
+    }
+}
+
+function setPlatform(platform) {
     exec(null, null, serviceName, 'setPlatform', [platform]);
 }
 
-function getPluginPlatform(){
-    if(window.Ionic){
+function getPluginPlatform() {
+    if (window.Ionic) {
         return "Ionic";     // No I18N
-    }else if(window.PhoneGap || window.phonegap){
+    } else if (window.PhoneGap || window.phonegap) {
         return "PhoneGap";  // No I18N
-    }else{
+    } else {
         return "Cordova";   // No I18N
     }
 }
 
 function parseResult(input) {
-    if(typeof input === 'string'){
+    if (typeof input === 'string') {
         try {
             var json = JSON.parse(input);
-            if(typeof json === 'object'){
+            if (typeof json === 'object') {
                 return json;
-            }else{
+            } else {
                 return input;
             }
         } catch (e) {
             return input;
         }
-    }else{
+    } else {
         return input;
     }
 };
+
+window.addEventListener('orientationchange', function() {        
+    exec(null, null, serviceName, 'refreshLauncher', []);   // No I18N
+});

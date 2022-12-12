@@ -55,6 +55,17 @@ NSString *TYPE_ENDED = @"ENDED";
 
 NSString *serviceName = @"ZohoSalesIQ";
 
+NSString *INFO_LOG = @"INFO";
+NSString *WARNING_LOG = @"WARNING";
+NSString *ERROR_LOG = @"ERROR";
+NSString *CONVERSATIONS = @"TAB_CONVERSATIONS";
+NSString *FAQ = @"TAB_FAQ";
+NSString *HANDLE_URL = @"HANDLE_URL";
+NSString *EVENT_OPEN_URL = @"EVENT_OPEN_URL";
+NSString *EVENT_COMPLETE_CHAT_ACTION = @"EVENT_COMPLETE_CHAT_ACTION";
+
+bool handleURI = YES;
+
 
 - (void)performAdditionalSetup{
     //MARK:- PERFORM ADDITIONAL SETUP HERE
@@ -407,6 +418,144 @@ NSString *serviceName = @"ZohoSalesIQ";
     
 }
 
+- (void)setLoggerEnabled : (CDVInvokedUrlCommand*)enable{
+    if ([enable.arguments count] > 0) {
+        BOOL enableLog = [[enable.arguments objectAtIndex:0] boolValue];
+        [[ZohoSalesIQ Logger] setEnabled:enableLog];
+    }
+}
+- (void)clearLogsForiOS : (CDVInvokedUrlCommand*)command{
+    [[ZohoSalesIQ Logger] clear];
+}
+
+- (void)isLoggerEnabled: (CDVInvokedUrlCommand*)command {
+    BOOL logEnabled = [[ZohoSalesIQ Logger] isEnabled];
+    CDVPluginResult* pluginResult = nil;
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:logEnabled];
+    [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+
+- (void)writeLogForiOS:(CDVInvokedUrlCommand*)command {
+    if ([command.arguments count] > 1) {
+        NSString* log = [command.arguments objectAtIndex:0];
+        NSString* level = [command.arguments objectAtIndex:1];
+        SIQDebugLogLevel debugLogLevel = SIQDebugLogLevelError;
+        if([level isEqual: INFO_LOG]){
+            debugLogLevel = SIQDebugLogLevelInfo;
+        }else if ([level  isEqual: WARNING_LOG]){
+            debugLogLevel = SIQDebugLogLevelWarning;
+        }else if ([level  isEqual: ERROR_LOG]){
+            debugLogLevel = SIQDebugLogLevelError;
+        }
+        [[ZohoSalesIQ Logger] write: log logLevel: debugLogLevel success:^(BOOL success) {
+            CDVPluginResult* pluginResult = nil;
+            if(success == true){
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:YES];
+                [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+            }else{
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsBool:NO];
+                [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+            }
+        }];
+    }
+}
+
+- (void)setLoggerPathForiOS : (CDVInvokedUrlCommand*)command {
+    if ([command.arguments count] > 0) {
+        NSString* path = [command.arguments objectAtIndex:0];
+        NSMutableURLRequest *url = [[NSURL alloc] initWithString:path];
+        [[ZohoSalesIQ Logger] setPath:url];
+    }
+}
+//MARK:- SHOULD OPEN APIs
+- (void)shouldOpenUrl : (CDVInvokedUrlCommand*)enable {
+    if ([enable.arguments count] > 0) {
+        BOOL enableHandleURI = [[enable.arguments objectAtIndex:0] boolValue];
+        handleURI = enableHandleURI;
+    }
+}
+
+- (BOOL)shouldOpenURL:(NSURL *)url in:(SIQVisitorChat * _Nullable)chat {
+    NSMutableDictionary *chatDict = [NSMutableDictionary dictionary];
+    chatDict = [self getChatObject:chat];
+    [chatDict setObject: url.absoluteString  forKey: @"url"];
+    [self sendEvent:HANDLE_URL body: chatDict];
+    return handleURI;
+}
+
+//MARK:- EVENT HANDLE APIs
+- (void)sendEvent: (CDVInvokedUrlCommand*)command {
+    if ([command.arguments count] > 0) {
+        NSString* eventName = [command.arguments objectAtIndex:0];
+        if ([eventName  isEqual: EVENT_OPEN_URL]) {
+            if ([command.arguments count] > 0) {
+                NSArray *values = command.arguments[1];
+                if (handleURI == NO) {
+                    for (int i = 0; i < values.count; i++)
+                    {
+                        NSString *currentObject = [values objectAtIndex:i];
+                        NSMutableURLRequest *url = [[NSURL alloc] initWithString:currentObject];
+                        [ZohoSalesIQ openURL: url];
+                        break;
+                    }
+                }
+            }
+        } else if ([eventName  isEqual: EVENT_COMPLETE_CHAT_ACTION]) {
+            NSArray *values = command.arguments[1];
+            NSString *uuid;
+            BOOL complete;
+            NSString *message;
+            
+            for (int i = 0; i < values.count; i++)
+            {
+                switch (i) {
+                    case 0:
+                        uuid = [values objectAtIndex: 0];
+                        break;
+                    case 1:
+                        complete = [[values objectAtIndex:1] boolValue];
+                    case 2:
+                        message = [values objectAtIndex: 2];
+                    default:
+                        break;
+                }
+            }
+            if (([actionDictionary valueForKey:uuid] != nil) && (uuid != nil)) {
+                SIQActionHandler *handler = [actionDictionary valueForKey:uuid];
+                if (message != nil) {
+                    if (complete == YES){
+                        [handler successWithMessage:message];
+                    }else{
+                        [handler faliureWithMessage:message];
+                    }
+                }else {
+                    [handler successWithMessage:nil];
+                }
+                [actionDictionary removeObjectForKey:uuid];
+            }
+        }
+    }
+}
+
+//MARK:- TAB ORDER API
+- (void)setTabOrder:(CDVInvokedUrlCommand*)command {
+    NSMutableArray *sendOrders = [[NSMutableArray alloc]init];
+    if ([command.arguments count] > 0) {
+        NSArray *tabs = command.arguments[0];
+        for (int i = 0; i < [tabs count]; i++)
+        {
+            NSString  *currentObject = [tabs objectAtIndex:i];
+            if ([currentObject  isEqual: CONVERSATIONS]) {
+                [sendOrders addObject:[NSNumber numberWithInteger:0]];
+            } else if ([currentObject  isEqual: FAQ]) {
+                [sendOrders addObject:[NSNumber numberWithInteger:1]];
+            }
+        }
+    }
+    [ZohoSalesIQ setTabOrder: sendOrders];
+}
+
 //MARK:- CHAT ACTION APIs
 - (void)registerChatAction:(CDVInvokedUrlCommand*)command{
     NSString *actionName = [command.arguments objectAtIndex:0];
@@ -687,7 +836,7 @@ NSString *serviceName = @"ZohoSalesIQ";
 }
 
 - (void)getCategories:(CDVInvokedUrlCommand*)command{
-    [[ZohoSalesIQ FAQ] getCategories:^(NSError * _Nullable error, NSArray<SIQFAQCategory *> * _Nullable categories) {
+    [[ZohoSalesIQ FAQ] getCategoriesWithDepartmentIDS:nil :^(NSError * _Nullable error, NSArray<SIQFAQCategory *> * _Nullable categories) {
         CDVPluginResult* pluginResult = nil;
         if(error != nil){
             NSMutableDictionary *errorDictionary = [self getErrorObject:error];
@@ -759,14 +908,14 @@ void mainThread(void (^block)(void)) {
     }
     NSString *script = @"";
     if([body isKindOfClass:[NSNumber class]]){
-        script = [NSString stringWithFormat:@"%@.sendEvent(`%@`, %@)", serviceName, name, body];
+        script = [NSString stringWithFormat:@"%@.sendEventToJs(`%@`, %@)", serviceName, name, body];
     }else{
         if([body isKindOfClass:[NSString class]]){
             NSString *jsonString = (NSString*)body;
             jsonString = [jsonString stringByReplacingOccurrencesOfString:@"`" withString:@"\""];
-            script = [NSString stringWithFormat: @"%@.sendEvent(`%@`, `%@`)", serviceName, name, jsonString];
+            script = [NSString stringWithFormat: @"%@.sendEventToJs(`%@`, `%@`)", serviceName, name, jsonString];
         }else if(body == nil){
-            script = [NSString stringWithFormat: @"%@.sendEvent(`%@`)", serviceName, name];
+            script = [NSString stringWithFormat: @"%@.sendEventToJs(`%@`)", serviceName, name];
         }
     }
     [self stringByEvaluatingJavaScriptFromString:script];
@@ -913,8 +1062,31 @@ void mainThread(void (^block)(void)) {
         if([chat lastMessage] != nil){
             [chatDict setObject: [chat lastMessage]  forKey: @"lastMessage"];
         }
-        if([chat lastMessageSender] != nil){
-            [chatDict setObject: [chat lastMessageSender]  forKey: @"lastMessageSender"];
+        if ([chat lastMessage] != nil){
+            if ([[chat lastMessage] file] != nil){
+                NSString *fileContent = [[[chat lastMessage] file] contentType];
+                NSString *comment = [[[chat lastMessage] file] comment];
+
+                if (fileContent != nil){
+                    if (comment != nil){
+                        [chatDict setObject:[NSString stringWithFormat:@"%@:%@",fileContent,comment]  forKey: @"lastMessage"];
+                    }else{
+                        [chatDict setObject:fileContent  forKey: @"lastMessage"];
+                    }
+                }
+            } else if ([[chat lastMessage] text] != nil){
+                [chatDict setObject: [[chat lastMessage] text]  forKey: @"lastMessage"];
+            }
+            NSString *sender = [[chat lastMessage] sender];
+            if( sender != nil){
+                [chatDict setObject: sender  forKey: @"lastMessageSender"];
+            }
+            
+            NSDate *messageTime = [[chat lastMessage] time];
+            if (messageTime != nil){
+                int time = (int)[messageTime timeIntervalSince1970];
+                [chatDict setObject: @(time) forKey: @"lastMessageTime"];
+            }
         }
         if([chat question] != nil){
             [chatDict setObject: [chat question]  forKey: @"question"];
@@ -942,12 +1114,6 @@ void mainThread(void (^block)(void)) {
             [chatDict setObject: TYPE_MISSED  forKey: @"status"];
         }else if (status == ChatStatusClosed){
             [chatDict setObject: TYPE_CLOSED  forKey: @"status"];
-        }
-        
-        if([chat lastMessageTime] != nil){
-            NSDate *messageTime = [chat lastMessageTime];
-            int time = (int)[messageTime timeIntervalSince1970];
-            [chatDict setObject: @(time) forKey: @"lastMessageTime"];
         }
         
         [chatDict setObject: @([chat unreadCount])  forKey: @"unreadCount"];
