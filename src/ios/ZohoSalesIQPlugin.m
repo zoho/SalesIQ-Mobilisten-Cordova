@@ -198,6 +198,12 @@ bool handleURI = YES;
         [[ZohoSalesIQ Chat] setLanguage:LanguageBulgarian];
     }else if([language_code isEqualToString:@"in"] || [language_code isEqualToString:@"id"]){
         [[ZohoSalesIQ Chat] setLanguage:LanguageIndonesian];
+    }else if([language_code isEqualToString:@"ka"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageGeorgian];
+    }else if([language_code isEqualToString:@"hy"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageArmenian];
+    }else if([language_code isEqualToString:@"fa"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguagePersian];
     }else{
         [[ZohoSalesIQ Chat] setLanguage:LanguageEnglish];
     }
@@ -448,7 +454,7 @@ bool handleURI = YES;
         }else if ([level  isEqual: ERROR_LOG]){
             debugLogLevel = SIQDebugLogLevelError;
         }
-        [[ZohoSalesIQ Logger] write: log logLevel: debugLogLevel success:^(BOOL success) {
+        [[ZohoSalesIQ Logger] write: log logLevel: debugLogLevel file:nil line:nil function:nil fileID:nil filePath:nil column:nil success:^(BOOL success) {
             CDVPluginResult* pluginResult = nil;
             if(success == true){
                 pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:YES];
