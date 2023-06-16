@@ -39,6 +39,7 @@ NSString *RATING_RECEIVED = @"RATING_RECEIVED";
 NSString *CHAT_REOPENED = @"CHAT_REOPENED";
 NSString *PERFORM_CHATACTION = @"PERFORM_CHATACTION";
 NSString *CUSTOMTRIGGER = @"CUSTOMTRIGGER";
+NSString *BOT_TRIGGER = @"BOT_TRIGGER";
 
 NSString *UNREAD_COUNT_CHANGED = @"UNREAD_COUNT_CHANGED";
 NSString *VISITOR_IPBLOCKED = @"VISITOR_IPBLOCKED";
@@ -769,16 +770,20 @@ bool handleURI = YES;
 - (void)setCustomAction:(CDVInvokedUrlCommand*)command{
     NSString *customActionName = [command.arguments objectAtIndex:0];
     if(customActionName!=nil){
-        [[ZohoSalesIQ Tracking] setCustomAction:customActionName];
+        [[ZohoSalesIQ Tracking] setCustomAction:customActionName shouldOpenChatWindow:NO];
     }
 }
 
 - (void)performCustomAction:(CDVInvokedUrlCommand*)command{
     NSString *customActionName = [command.arguments objectAtIndex:0];
+    BOOL shouldOpen = [[command.arguments objectAtIndex:1] boolValue];
+
     if(customActionName!=nil){
-        [[ZohoSalesIQ Visitor] performCustomAction:customActionName];
+        [[ZohoSalesIQ Visitor] performCustomAction:customActionName shouldOpenChatWindow:shouldOpen];
     }
 }
+
+
 
 //MARK:- IN-APP-NOTIFICATIONS APIS
 - (void)enableInAppNotification:(CDVInvokedUrlCommand*)command{
@@ -1065,14 +1070,31 @@ void mainThread(void (^block)(void)) {
         
         [chatDict setObject: [NSNumber numberWithBool: [chat isBotAttender]]   forKey: @"isBotAttender"];
         
-        if([chat lastMessage] != nil){
-            [chatDict setObject: [chat lastMessage]  forKey: @"lastMessage"];
+        if ([[chat lastMessage] text] != nil) {
+            [chatDict setObject: [[chat lastMessage] text]  forKey: @"lastMessage"];
         }
+        NSMutableDictionary *recentMessageDict = [NSMutableDictionary dictionary];
+        NSMutableDictionary *fileMessageDict = [NSMutableDictionary dictionary];
         if ([chat lastMessage] != nil){
             if ([[chat lastMessage] file] != nil){
                 NSString *fileContent = [[[chat lastMessage] file] contentType];
                 NSString *comment = [[[chat lastMessage] file] comment];
-
+                NSString *fileName = [[[chat lastMessage] file] name];
+                NSInteger fileSize = [[[chat lastMessage] file] size];
+                
+                if (fileName != nil) {
+                    [fileMessageDict setObject: fileName  forKey: @"name"];
+                }
+                if (fileContent != nil) {
+                    [fileMessageDict setObject: fileContent  forKey: @"content_type"];
+                }
+                if (comment != nil) {
+                    [fileMessageDict setObject: comment  forKey: @"comment"];
+                }
+                if (fileSize != nil) {
+                    [fileMessageDict setObject: @(fileSize)   forKey: @"size"];
+                }
+                
                 if (fileContent != nil){
                     if (comment != nil){
                         [chatDict setObject:[NSString stringWithFormat:@"%@:%@",fileContent,comment]  forKey: @"lastMessage"];
@@ -1081,18 +1103,24 @@ void mainThread(void (^block)(void)) {
                     }
                 }
             } else if ([[chat lastMessage] text] != nil){
-                [chatDict setObject: [[chat lastMessage] text]  forKey: @"lastMessage"];
+                NSString *text = [[chat lastMessage] text];
+                [chatDict setObject: text  forKey: @"lastMessage"];
+                [recentMessageDict setObject: text  forKey: @"text"];
             }
+            [recentMessageDict setObject: fileMessageDict  forKey: @"file"];
             NSString *sender = [[chat lastMessage] sender];
             if( sender != nil){
                 [chatDict setObject: sender  forKey: @"lastMessageSender"];
+                [recentMessageDict setObject: sender  forKey: @"sender"];
             }
             
             NSDate *messageTime = [[chat lastMessage] time];
             if (messageTime != nil){
                 int time = (int)[messageTime timeIntervalSince1970];
                 [chatDict setObject: @(time) forKey: @"lastMessageTime"];
+                [recentMessageDict setObject: @(time)  forKey: @"time"];
             }
+            [chatDict setObject: recentMessageDict  forKey: @"recentMessage"];
         }
         if([chat question] != nil){
             [chatDict setObject: [chat question]  forKey: @"question"];
@@ -1396,6 +1424,10 @@ void mainThread(void (^block)(void)) {
     
     [self sendEvent:CUSTOMTRIGGER body:triggerInformation];
     
+}
+
+- (void)handleBotTrigger {
+    [self sendEvent:BOT_TRIGGER body:nil];
 }
 
 @end

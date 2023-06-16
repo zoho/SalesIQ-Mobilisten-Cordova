@@ -24,6 +24,7 @@ exports.EVENT = {
     RATING_RECEIVED: "RATING_RECEIVED", // No I18N
     PERFORM_CHATACTION: "PERFORM_CHATACTION",   // No I18N
     CUSTOMTRIGGER: "CUSTOMTRIGGER", // No I18N
+    BOT_TRIGGER: "BOT_TRIGGER", // No I18N
     HANDLE_URL: "HANDLE_URL"    // No I18N
 };
 
@@ -237,8 +238,8 @@ exports.setCustomAction = function (actionName, success, error) {
     exec(success, error, serviceName, 'setCustomAction', [actionName]);         // No I18N
 };
 
-exports.performCustomAction = function (actionName, success, error) {
-    exec(success, error, serviceName, 'performCustomAction', [actionName]);         // No I18N
+exports.performCustomAction = function (actionName, shouldOpenChatWindow = false, success, error) {
+    exec(success, error, serviceName, 'performCustomAction', [actionName, shouldOpenChatWindow]);         // No I18N
 };
 
 //INAPPNOTIFICATION APIS

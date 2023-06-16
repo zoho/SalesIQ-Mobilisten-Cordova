@@ -13,9 +13,9 @@ import android.util.Base64;
 
 import com.google.gson.Gson;
 import com.zoho.commons.ChatComponent;
-import com.zoho.commons.OnInitCompleteListener;
 import com.zoho.commons.LauncherModes;
 import com.zoho.commons.LauncherProperties;
+import com.zoho.commons.OnInitCompleteListener;
 import com.zoho.livechat.android.SIQDepartment;
 import com.zoho.livechat.android.SIQVisitor;
 import com.zoho.livechat.android.SIQVisitorLocation;
@@ -82,6 +82,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     private static final String RATING_RECEIVED = "RATING_RECEIVED";         // No I18N
     private static final String PERFORM_CHATACTION = "PERFORM_CHATACTION";         // No I18N
     private static final String CUSTOMTRIGGER = "CUSTOMTRIGGER";         // No I18N
+    private static final String BOT_TRIGGER = "BOT_TRIGGER";         // No I18N
     private static final String CHAT_QUEUE_POSITION_CHANGED =
             "CHAT_QUEUE_POSITION_CHANGED";         // No I18N
     private static final String HANDLE_URL = "HANDLE_URL";         // No I18N
@@ -92,6 +93,11 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     private static final String TYPE_ENDED = "ENDED";         // No I18N
     private static final String TYPE_MISSED = "MISSED";         // No I18N
     private static final String TYPE_WAITING = "WAITING";         // No I18N
+
+    private static final String SENDING = "SENDING";         // No I18N
+    private static final String UPLOADING = "UPLOADING";         // No I18N
+    private static final String SENT = "SENT";         // No I18N
+    private static final String FAILURE = "FAILURE";         // No I18N
 
     private static final int INVALID_FILTER_CODE = 604;
     private static final String INVALID_FILTER_TYPE = "invalid filter type";         // No I18N
@@ -231,7 +237,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                 this.setCustomAction(data.get(0).toString());
             }
             if (action.equals("performCustomAction")) {
-                this.performCustomAction(data.get(0).toString());
+                this.performCustomAction(data.get(0).toString(), LiveChatUtil.getBoolean(data.get(1)));
             }
             if (action.equals("enableInAppNotification")) {
                 this.enableInAppNotification();
@@ -682,11 +688,11 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         });
     }
 
-    private void performCustomAction(final String actionName) {
+    private void performCustomAction(final String actionName, final boolean shouldOpenChatWindow) {
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             public void run() {
-                ZohoSalesIQ.Tracking.setCustomAction(actionName);
+                ZohoSalesIQ.Tracking.setCustomAction(actionName, shouldOpenChatWindow);
             }
         });
     }
@@ -1124,20 +1130,10 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     }
 
     public static void handleNotification(final Application application, final Map extras) {        
-        SharedPreferences sharedPreferences = application.getSharedPreferences("siq_session", 0);         // No I18N
-        if (sharedPreferences != null) {
-            final String appKey = sharedPreferences.getString("salesiq_appkey", null);         // No I18N
-            final String accessKey = sharedPreferences.getString("salesiq_accesskey", null);         // No I18N
-            if (appKey != null && accessKey != null) {
-                Handler handler = new Handler(Looper.getMainLooper());
-                handler.post(new Runnable() {
-                    public void run() {
-                        initSalesIQ(application, null, appKey, accessKey, null);
-                        ZohoSalesIQ.Notification.handle(application, extras);
-                    }
-                });
-            }
-        }
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(() -> {
+            ZohoSalesIQ.Notification.handle(application, extras);
+        });
     }
 
     public static void enablePush(String token, Boolean testdevice) {
@@ -1148,6 +1144,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     private static void initSalesIQ(final Application application, final Activity activity,
                                     final String appKey, final String accessKey,
                                     final CallbackContext callbackContext) {
+        ZohoSalesIQ.setPlatformName("Cordova-Android");         // No I18N
         if (application != null) {
             ZohoSalesIQ.init(application, appKey, accessKey, null, new OnInitCompleteListener() {
                 @Override
@@ -1175,14 +1172,12 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                     }
                 }
             });
-            ZohoSalesIQ.setPlatformName("Cordova-Android");         // No I18N
             if (activity != null && ZohoSalesIQ.getApplicationManager() != null) {
                 if (ZohoSalesIQ.getApplicationManager().getCurrentActivity() == null) {
                     ZohoSalesIQ.getApplicationManager().setCurrentActivity(activity);
                 }
                 ZohoSalesIQ.getApplicationManager().setAppActivity(activity);
-            }
-            ZohoSalesIQ.forceInitialiseSDK();
+            }        
         }
     }
 
@@ -1240,12 +1235,53 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         if (chat.getLastMessage() != null) {
             visitorMap.put("lastMessage", chat.getLastMessage());         // No I18N
         }
-        if (chat.getLastMessageSender() != null) {
-            visitorMap.put("lastMessageSender", chat.getLastMessageSender());         // No I18N
-        }
-        if (chat.getLastMessageTime() > 0) {
-            long lastMessageTime = chat.getLastMessageTime();
-            visitorMap.put("lastMessageTime", lastMessageTime);         // No I18N
+        Map<String, Object> lastMessageMap = new HashMap<String, Object>();
+        VisitorChat.SalesIQMessage lastMessage = chat.getLastMessage();
+        if (lastMessage != null) {
+            if (lastMessage.getText() != null) {
+                visitorMap.put("lastMessage", lastMessage.getText());         // No I18N
+                lastMessageMap.put("text", lastMessage.getText());
+            }
+            if (lastMessage.getSender() != null) {
+                visitorMap.put("lastMessageSender", lastMessage.getSender());         // No I18N
+                lastMessageMap.put("sender", lastMessage.getSender());
+            }
+            if (lastMessage.getTime() != null && lastMessage.getTime() > 0) {
+                visitorMap.put("lastMessageTime", LiveChatUtil.getString(lastMessage.getTime()));         // No I18N
+                lastMessageMap.put("time", LiveChatUtil.getString(lastMessage.getTime()));         // No I18N
+            }        
+            // lastMessageMap.put("sender_id", lastMessage.getSenderId());            
+            // lastMessageMap.put("type", lastMessage.getType());
+            lastMessageMap.put("is_read", lastMessage.isRead());
+            // lastMessageMap.put("sent_by_visitor", lastMessage.getSentByVisitor());
+            // if (lastMessage.getStatus() != null) {
+            //     String status = null;
+            //     switch (lastMessage.getStatus()) {
+            //         case Sending:
+            //             status = SENDING;
+            //             break;
+            //         case Uploading:
+            //             status = UPLOADING;
+            //             break;
+            //         case Sent:
+            //             status = SENT;
+            //             break;
+            //         case Failure:
+            //             status = FAILURE;
+            //             break;
+            //     }
+            //     lastMessageMap.put("status", status);
+            // }
+            VisitorChat.SalesIQMessage.SalesIQFile salesIQFile = lastMessage.getFile();
+            Map<String, Object> fileMap = new HashMap<>();
+            if (salesIQFile != null) {
+                fileMap.put("name", salesIQFile.getName());
+                fileMap.put("content_type", salesIQFile.getContentType());
+                fileMap.put("comment", salesIQFile.getComment());
+                fileMap.put("size", salesIQFile.getSize());
+                lastMessageMap.put("file", fileMap);
+            }
+            visitorMap.put("recentMessage", lastMessageMap);         // No I18N
         }
         if (chat.getAttenderName() != null) {
             visitorMap.put("attenderName", chat.getAttenderName());         // No I18N
@@ -1442,6 +1478,11 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         }
 
         @Override
+        public void handleBotTrigger() {
+            eventEmitter(BOT_TRIGGER, null);
+        }
+
+        @Override
         public void handleChatOpened(VisitorChat visitorChat) {
             HashMap visitorMap = getChatMapObject(visitorChat);
             Gson gson = new Gson();
@@ -1502,9 +1543,11 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
         @Override
         public boolean handleUri(Uri uri, VisitorChat visitorChat) {
-            HashMap visitorMap = getChatMapObject(visitorChat);
-            visitorMap.put("url", uri.toString());
-            String json = new Gson().toJson(visitorMap);
+            HashMap chatMap = getChatMapObject(visitorChat);
+            // HashMap visitorMap = new HashMap<>();
+            chatMap.put("url", uri.toString());
+            // visitorMap.put("chat", chatMap);
+            String json = new Gson().toJson(chatMap);
             eventEmitter(HANDLE_URL, json);
             return shouldOpenUrl;
         }
