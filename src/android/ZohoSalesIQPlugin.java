@@ -1,8 +1,8 @@
 package com.zohosalesiq.mobilisten;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
@@ -10,6 +10,10 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Base64;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.content.res.AppCompatResources;
 
 import com.google.gson.Gson;
 import com.zoho.commons.ChatComponent;
@@ -30,15 +34,17 @@ import com.zoho.livechat.android.listeners.ConversationListener;
 import com.zoho.livechat.android.listeners.DepartmentListener;
 import com.zoho.livechat.android.listeners.FAQCategoryListener;
 import com.zoho.livechat.android.listeners.FAQListener;
-import com.zoho.livechat.android.listeners.OpenArticleListener;
 import com.zoho.livechat.android.listeners.OperatorImageListener;
 import com.zoho.livechat.android.listeners.SalesIQActionListener;
 import com.zoho.livechat.android.listeners.SalesIQChatListener;
 import com.zoho.livechat.android.listeners.SalesIQCustomActionListener;
-import com.zoho.livechat.android.listeners.SalesIQFAQListener;
 import com.zoho.livechat.android.listeners.SalesIQListener;
 import com.zoho.livechat.android.models.SalesIQArticle;
 import com.zoho.livechat.android.models.SalesIQArticleCategory;
+import com.zoho.livechat.android.modules.knowledgebase.ui.entities.Resource;
+import com.zoho.livechat.android.modules.knowledgebase.ui.listeners.OpenResourceListener;
+import com.zoho.livechat.android.modules.knowledgebase.ui.listeners.ResourcesListener;
+import com.zoho.livechat.android.modules.knowledgebase.ui.listeners.SalesIQKnowledgeBaseListener;
 import com.zoho.livechat.android.operation.SalesIQApplicationManager;
 import com.zoho.livechat.android.utils.LiveChatUtil;
 import com.zoho.salesiqembed.ZohoSalesIQ;
@@ -54,6 +60,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -94,17 +101,8 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     private static final String TYPE_MISSED = "MISSED";         // No I18N
     private static final String TYPE_WAITING = "WAITING";         // No I18N
 
-    private static final String SENDING = "SENDING";         // No I18N
-    private static final String UPLOADING = "UPLOADING";         // No I18N
-    private static final String SENT = "SENT";         // No I18N
-    private static final String FAILURE = "FAILURE";         // No I18N
-
     private static final int INVALID_FILTER_CODE = 604;
     private static final String INVALID_FILTER_TYPE = "invalid filter type";         // No I18N
-    private static final String TRYCATCH_EXCEPTION = "trycatch exception";         // No I18N
-
-    private static final int LAUNCHER_STATIC_MODE = 1;
-    private static final int LAUNCHER_FLOATING_MODE = 2;
 
     private static final String LAUNCHER_HORIZONTAL_LEFT = "LAUNCHER_HORIZONTAL_LEFT";
     private static final String LAUNCHER_HORIZONTAL_RIGHT = "LAUNCHER_HORIZONTAL_RIGHT";
@@ -122,7 +120,8 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
     enum Tab {
         CONVERSATIONS("TAB_CONVERSATIONS"),
-        FAQ("TAB_FAQ");
+        @Deprecated FAQ("TAB_FAQ"),
+        KNOWLEDGE_BASE("TAB_KNOWLEDGE_BASE");
 
         final String name;
 
@@ -304,7 +303,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             if (action.equals("setVisitorLocation")) {
                 this.setVisitorLocation((JSONObject) data.get(0));
             }
-            if (action.equals("syncThemeWithOS")) {
+            if (action.equals("syncThemeWithOSForAndroid")) {
                 this.syncThemeWithOS((boolean) data.get(0));
             }
             if (action.equals("isMultipleOpenChatRestricted")) {
@@ -313,13 +312,13 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             if (action.equals("printDebugLogsForAndroid")) {
                 this.printDebugLogsForAndroid((boolean) data.get(0));
             }
-            if (action.equals("sendEvent")) {            
+            if (action.equals("sendEvent")) {
                 this.sendEvent((String) data.get(0), (JSONArray) data.get(1));
             }
             if (action.equals("shouldOpenUrl")) {
                 this.shouldOpenUrl((boolean) data.get(0));
             }
-            if (action.equals("setTabOrder")) {                       
+            if (action.equals("setTabOrder")) {
                 this.setTabOrder((JSONArray) data.get(0));
             }
             if (action.equals("setNotificationIconForAndroid")) {
@@ -331,14 +330,17 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             if (action.equals("isLoggerEnabled")) {
                 this.isLoggerEnabled(callbackContext);
             }
-            if (action.equals("setLauncherPropertiesForAndroid")) {                            
+            if (action.equals("setLauncherPropertiesForAndroid")) {
                 this.setLauncherPropertiesForAndroid((JSONObject) data.get(0));
-            }        
-            if (action.equals("refreshLauncher")) {                            
+            }
+            if (action.equals("refreshLauncher")) {
                 this.refreshLauncher();
-            }     
-            if (action.equals("setLauncherIconForAndroid")) {                            
+            }
+            if (action.equals("setLauncherIconForAndroid")) {
                 this.setLauncherIconForAndroid((String) data.get(0));
+            }
+            if (action.equals("setThemeForAndroid")) {
+                this.setThemeForAndroid((String) data.get(0));
             }
             return true;
         }
@@ -354,7 +356,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                 initSalesIQ(context, activity, appKey, accessKey, callbackContext);
                 ZohoSalesIQ.setListener(new ZohoSalesIQPluginListener());
                 ZohoSalesIQ.Chat.setListener(new ZohoSalesIQPluginListener());
-                ZohoSalesIQ.FAQ.setListener(new ZohoSalesIQPluginListener());
+                ZohoSalesIQ.KnowledgeBase.setListener(new ZohoSalesIQPluginListener());
                 ZohoSalesIQ.ChatActions.setListener(new ZohoSalesIQPluginListener());
             }
         });
@@ -436,7 +438,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             public void run() {
-                ArrayList<String> departmentList = new ArrayList<String>();
+                ArrayList<String> departmentList = new ArrayList<>();
                 if (department != null) {
                     try {
                         for (int i = 0; i < department.length(); i++) {
@@ -642,7 +644,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             public void run() {
-                ZohoSalesIQ.FAQ.setVisibility(visible);
+                ZohoSalesIQ.KnowledgeBase.setVisibility(ZohoSalesIQ.ResourceType.Articles, visible);
             }
         });
     }
@@ -753,7 +755,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
             @Override
             public void onFailure(int code, String message) {
-                HashMap errorMap = new HashMap();
+                HashMap<String, Object> errorMap = new HashMap<>();
                 errorMap.put("code", code);         // No I18N
                 errorMap.put("message", message);         // No I18N
                 JSONObject errorObject = new JSONObject(errorMap);
@@ -783,7 +785,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
                     @Override
                     public void onFailure(int code, String message) {
-                        HashMap errorMap = new HashMap();
+                        HashMap<String, Object> errorMap = new HashMap<>();
                         errorMap.put("code", code);         // No I18N
                         errorMap.put("message", message);         // No I18N
                         JSONObject errorObject = new JSONObject(errorMap);
@@ -818,7 +820,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
                             @Override
                             public void onFailure(int code, String message) {
-                                HashMap errorMap = new HashMap();
+                                HashMap<String, Object> errorMap = new HashMap<>();
                                 errorMap.put("code", code);         // No I18N
                                 errorMap.put("message", message);         // No I18N
                                 JSONObject errorObject = new JSONObject(errorMap);
@@ -826,7 +828,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                             }
                         });
                     } else {
-                        HashMap errorMap = new HashMap();
+                        HashMap<String, Object> errorMap = new HashMap<>();
                         errorMap.put("code", INVALID_FILTER_CODE);         // No I18N
                         errorMap.put("message", INVALID_FILTER_TYPE);         // No I18N
                         JSONObject errorObject = new JSONObject(errorMap);
@@ -860,7 +862,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
                     @Override
                     public void onFailure(int code, String message) {
-                        HashMap errorMap = new HashMap();
+                        HashMap<String, Object> errorMap = new HashMap<>();
                         errorMap.put("code", code);         // No I18N
                         errorMap.put("message", message);         // No I18N
                         JSONObject errorObject = new JSONObject(errorMap);
@@ -892,7 +894,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
                     @Override
                     public void onFailure(int code, String message) {
-                        HashMap errorMap = new HashMap();
+                        HashMap<String, Object> errorMap = new HashMap<>();
                         errorMap.put("code", code);         // No I18N
                         errorMap.put("message", message);         // No I18N
                         JSONObject errorObject = new JSONObject(errorMap);
@@ -905,35 +907,25 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
     private void getArticlesWithCategoryID(final String categoryId,
                                            final CallbackContext articlesCallback) {
-        Handler handler = new Handler(Looper.getMainLooper());
-        handler.post(new Runnable() {
-            public void run() {
-                ZohoSalesIQ.FAQ.getArticles(categoryId, new FAQListener() {
+        ZohoSalesIQ.KnowledgeBase.getResources(ZohoSalesIQ.ResourceType.Articles, null, categoryId, null, new ResourcesListener() {
                     @Override
-                    public void onSuccess(ArrayList<SalesIQArticle> articlesList) {
-                        if (articlesList != null) {
-                            ArrayList<HashMap> array = new ArrayList<>();
-                            for (int i = 0; i < articlesList.size(); i++) {
-                                SalesIQArticle article = articlesList.get(i);
-                                HashMap articleMap = getArticleMapObject(article);
-                                array.add(articleMap);
-                            }
-                            JSONArray jsonArray = new JSONArray(array);
-                            articlesCallback.success(jsonArray);
+                    public void onSuccess(@NonNull List<Resource> resources, boolean b) {
+                        ArrayList<HashMap> array = new ArrayList<>();
+                        for (int i = 0; i < resources.size(); i++) {
+                            array.add(getArticleMapObject(resources.get(i)));
                         }
+                        articlesCallback.success(new JSONArray(array));
                     }
 
                     @Override
-                    public void onFailure(int code, String message) {
-                        HashMap errorMap = new HashMap();
+                    public void onFailure(int code, @Nullable String message) {
+                        HashMap<String, Object> errorMap = new HashMap<>();
                         errorMap.put("code", code);         // No I18N
                         errorMap.put("message", message);         // No I18N
-                        JSONObject errorObject = new JSONObject(errorMap);
-                        articlesCallback.error(errorObject);
+                        articlesCallback.error(new JSONObject(errorMap));
                     }
-                });
-            }
-        });
+                }
+        );
     }
 
     private void getCategories(final CallbackContext categoryCallback) {
@@ -949,7 +941,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                             for (int i = 0; i < categoryList.size(); i++) {
                                 SalesIQArticleCategory category = categoryList.get(i);
 
-                                HashMap categoryMap = new HashMap();
+                                HashMap<String, Object> categoryMap = new HashMap<>();
                                 categoryMap.put("id", category.getCategoryId());         // No I18N
                                 categoryMap.put("name", category.getCategoryName());         //
                                 // No I18N
@@ -964,7 +956,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
                     @Override
                     public void onFailure(int code, String message) {
-                        HashMap errorMap = new HashMap();
+                        HashMap<String, Object> errorMap = new HashMap<>();
                         errorMap.put("code", code);         // No I18N
                         errorMap.put("message", message);         // No I18N
                         JSONObject errorObject = new JSONObject(errorMap);
@@ -979,15 +971,15 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         final Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             public void run() {
-                ZohoSalesIQ.FAQ.openArticle(id, new OpenArticleListener() {
+                ZohoSalesIQ.KnowledgeBase.open(ZohoSalesIQ.ResourceType.Articles, id, new OpenResourceListener() {
                     @Override
                     public void onSuccess() {
                         articlesCallback.success();
                     }
 
                     @Override
-                    public void onFailure(int code, String message) {
-                        HashMap errorMap = new HashMap();
+                    public void onFailure(int code, @Nullable String message) {
+                        HashMap<String, Object> errorMap = new HashMap<>();
                         errorMap.put("code", code);         // No I18N
                         errorMap.put("message", message);         // No I18N
                         JSONObject errorObject = new JSONObject(errorMap);
@@ -1129,7 +1121,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         });
     }
 
-    public static void handleNotification(final Application application, final Map extras) {        
+    public static void handleNotification(final Application application, final Map extras) {
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(() -> {
             ZohoSalesIQ.Notification.handle(application, extras);
@@ -1177,7 +1169,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                     ZohoSalesIQ.getApplicationManager().setCurrentActivity(activity);
                 }
                 ZohoSalesIQ.getApplicationManager().setAppActivity(activity);
-            }        
+            }
         }
     }
 
@@ -1215,8 +1207,8 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         }
     }
 
-    public HashMap getChatMapObject(VisitorChat chat) {
-        HashMap visitorMap = new HashMap();
+    public HashMap<String, Object> getChatMapObject(VisitorChat chat) {
+        HashMap<String, Object> visitorMap = new HashMap<>();
         visitorMap.put("id", chat.getChatID());         // No I18N
         visitorMap.put("unreadCount", chat.getUnreadCount());         // No I18N
         visitorMap.put("isBotAttender", chat.isBotAttender());         // No I18N
@@ -1235,7 +1227,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         if (chat.getLastMessage() != null) {
             visitorMap.put("lastMessage", chat.getLastMessage());         // No I18N
         }
-        Map<String, Object> lastMessageMap = new HashMap<String, Object>();
+        Map<String, Object> lastMessageMap = new HashMap<>();
         VisitorChat.SalesIQMessage lastMessage = chat.getLastMessage();
         if (lastMessage != null) {
             if (lastMessage.getText() != null) {
@@ -1249,7 +1241,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             if (lastMessage.getTime() != null && lastMessage.getTime() > 0) {
                 visitorMap.put("lastMessageTime", LiveChatUtil.getString(lastMessage.getTime()));         // No I18N
                 lastMessageMap.put("time", LiveChatUtil.getString(lastMessage.getTime()));         // No I18N
-            }        
+            }
             // lastMessageMap.put("sender_id", lastMessage.getSenderId());            
             // lastMessageMap.put("type", lastMessage.getType());
             lastMessageMap.put("is_read", lastMessage.isRead());
@@ -1302,16 +1294,16 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         return visitorMap;
     }
 
-    public HashMap getDepartmentMapObject(SIQDepartment department) {
-        HashMap departmentMap = new HashMap();
+    public HashMap<String, Object> getDepartmentMapObject(SIQDepartment department) {
+        HashMap<String, Object> departmentMap = new HashMap<>();
         departmentMap.put("id", department.id);                                                            // No I18N
         departmentMap.put("name", department.name);                                                        // No I18N
         departmentMap.put("available", department.available);                                              // No I18N
         return departmentMap;
     }
 
-    public HashMap getArticleMapObject(SalesIQArticle article) {
-        HashMap articleMap = new HashMap();
+    public HashMap<String, Object> getArticleMapObject(SalesIQArticle article) {
+        HashMap<String, Object> articleMap = new HashMap<>();
         articleMap.put("id", article.getId());         // No I18N
         articleMap.put("name", article.getTitle());         // No I18N
         articleMap.put("likeCount", article.getLiked());         // No I18N
@@ -1326,8 +1318,30 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         return articleMap;
     }
 
-    public HashMap getVisitorInfoObject(SIQVisitor siqVisitor) {
-        HashMap visitorInfoMap = new HashMap();
+    public HashMap<String, Object> getArticleMapObject(Resource article) {
+        HashMap<String, Object> articleMap = new HashMap<>();
+        if (article != null) {
+            articleMap.put("id", article.getId());         // No I18N
+            articleMap.put("name", article.getTitle());         // No I18N
+            if (article.getStats() != null) {
+                articleMap.put("likeCount", article.getStats().getLiked());         // No I18N
+                articleMap.put("dislikeCount", article.getStats().getDisliked());         // No I18N
+                articleMap.put("viewCount", article.getStats().getViewed());         // No I18N
+            }
+            if (article.getCategory() != null) {
+                if (article.getCategory().getId() != null) {
+                    articleMap.put("categoryID", article.getCategory().getId());         // No I18N
+                }
+                if (article.getCategory().getName() != null) {
+                    articleMap.put("categoryName", article.getCategory().getName());         // No I18N
+                }
+            }
+        }
+        return articleMap;
+    }
+
+    public HashMap<String, Object> getVisitorInfoObject(SIQVisitor siqVisitor) {
+        HashMap<String, Object> visitorInfoMap = new HashMap();
         if (siqVisitor.getName() != null) {
             visitorInfoMap.put("name", siqVisitor.getName());         // No I18N
         }
@@ -1386,7 +1400,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     }
 
     public class ZohoSalesIQPluginListener implements SalesIQListener, SalesIQChatListener,
-            SalesIQFAQListener, SalesIQActionListener {
+            SalesIQKnowledgeBaseListener, SalesIQActionListener {
 
         @Override
         public void handleFeedback(VisitorChat visitorChat) {
@@ -1423,23 +1437,31 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         }
 
         @Override
-        public void handleArticleOpened(String id) {
-            eventEmitter(ARTICLE_OPENED, id);
+        public void handleResourceOpened(@NonNull ZohoSalesIQ.ResourceType resourceType, @Nullable Resource resource) {
+            if (resource != null) {
+                eventEmitter(ARTICLE_OPENED, resource.getId());
+            }
         }
 
         @Override
-        public void handleArticleClosed(String id) {
-            eventEmitter(ARTICLE_CLOSED, id);
+        public void handleResourceClosed(@NonNull ZohoSalesIQ.ResourceType resourceType, @Nullable Resource resource) {
+            if (resource != null) {
+                eventEmitter(ARTICLE_CLOSED, resource.getId());
+            }
         }
 
         @Override
-        public void handleArticleLiked(String id) {
-            eventEmitter(ARTICLE_LIKED, id);
+        public void handleResourceLiked(@NonNull ZohoSalesIQ.ResourceType resourceType, @Nullable Resource resource) {
+            if (resource != null) {
+                eventEmitter(ARTICLE_LIKED, resource.getId());
+            }
         }
 
         @Override
-        public void handleArticleDisliked(String id) {
-            eventEmitter(ARTICLE_DISLIKED, id);
+        public void handleResourceDisliked(@NonNull ZohoSalesIQ.ResourceType resourceType, @Nullable Resource resource) {
+            if (resource != null) {
+                eventEmitter(ARTICLE_DISLIKED, resource.getId());
+            }
         }
 
         @Override
@@ -1572,7 +1594,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                     if (y > -1) {
                         launcherProperties.setY(y);
                     }
-                }            
+                }
                 if (launcherPropertiesMap.has("horizontalDirection")) {
                     LauncherProperties.Horizontal horizontalDirection = null;
                     String horizontalDirectionValue = launcherPropertiesMap.getString("horizontalDirection");
@@ -1602,36 +1624,37 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                         launcherProperties.setIcon(getDrawable(launcherPropertiesMap.getString("icon")));
                     } catch (JSONException ignored) {
                     }
-                }            
+                }
                 ZohoSalesIQ.setLauncherProperties(launcherProperties);
             } catch (JSONException ignored) {
             }
         });
     }
-    
+
     private Drawable getDrawable(String resourceName) {
-        int resourceId = getResourceId(resourceName);
+        SalesIQApplicationManager salesIQApplicationManager = ZohoSalesIQ.getApplicationManager();
+        int resourceId = getDrawableResourceId(resourceName);
         Drawable drawable = null;
-        if (resourceId > 0 && ZohoSalesIQ.getApplicationManager() != null && ZohoSalesIQ.getApplicationManager().getApplication() != null) {
-            drawable = ZohoSalesIQ.getApplicationManager().getApplication().getDrawable(resourceId);
+        if (resourceId > 0 && salesIQApplicationManager != null && salesIQApplicationManager.getApplication() != null) {
+            drawable = AppCompatResources.getDrawable(salesIQApplicationManager.getApplication().getApplicationContext(), resourceId);
         }
         return drawable;
     }
 
-    public void setLauncherIconForAndroid(String resourceName) {    
+    public void setLauncherIconForAndroid(String resourceName) {
         Drawable drawable = getDrawable(resourceName);
         if (drawable != null) {
-            ZohoSalesIQ.setLauncherIcon(drawable);        
+            ZohoSalesIQ.setLauncherIcon(drawable);
         }
     }
 
-    public void refreshLauncher() {        
+    public void refreshLauncher() {
         HANDLER.post(() -> {
             SalesIQApplicationManager salesIQApplicationManager =
                     ZohoSalesIQ.getApplicationManager();
             if (salesIQApplicationManager != null && salesIQApplicationManager.canShowBubble(salesIQApplicationManager.getCurrentActivity())) {
                 salesIQApplicationManager.showChatBubble(salesIQApplicationManager.getCurrentActivity());
-            }            
+            }
         });
     }
 
@@ -1684,7 +1707,8 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     }
 
     public void setTabOrder(final JSONArray tabNames) {
-        int minimumTabOrdersSize = Math.min(tabNames.length(), ZohoSalesIQ.Tab.values().length);
+        /** @apiNote Please remove the -1 below when the {@link ZohoSalesIQ.Tab.FAQ} is removed */
+        int minimumTabOrdersSize = Math.min(tabNames.length(), ZohoSalesIQ.Tab.values().length - 1);
         ZohoSalesIQ.Tab[] tabOrder = new ZohoSalesIQ.Tab[minimumTabOrdersSize];
         int insertIndex = 0;
         for (int index = 0; index < minimumTabOrdersSize; index++) {
@@ -1695,8 +1719,8 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             }
             if (Tab.CONVERSATIONS.name.equals(tabName)) {
                 tabOrder[insertIndex++] = ZohoSalesIQ.Tab.Conversations;
-            } else if (Tab.FAQ.name.equals(tabName)) {
-                tabOrder[insertIndex++] = ZohoSalesIQ.Tab.FAQ;
+            } else if (Tab.FAQ.name.equals(tabName) || Tab.KNOWLEDGE_BASE.name.equals(tabName)) {
+                tabOrder[insertIndex++] = ZohoSalesIQ.Tab.KnowledgeBase;
             }
         }
         ZohoSalesIQ.setTabOrder(tabOrder);
@@ -1706,22 +1730,43 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         ZohoSalesIQ.printDebugLogs(value);
     }
 
-    private int getResourceId(String drawableName) {
+    @SuppressLint("DiscouragedApi")
+    private int getDrawableResourceId(String drawableName) {
         SalesIQApplicationManager salesIQApplicationManager = ZohoSalesIQ.getApplicationManager();
         int resourceId = 0;
-        if (salesIQApplicationManager != null) {
+        if (salesIQApplicationManager != null && salesIQApplicationManager.getApplication() != null) {
             resourceId = salesIQApplicationManager.getApplication().getResources().getIdentifier(
                     drawableName, "drawable",   // No I18N
-                    ZohoSalesIQ.getApplicationManager().getApplication().getPackageName());
+                    salesIQApplicationManager.getApplication().getPackageName());
+
+        }
+        return resourceId;
+    }
+
+    @SuppressLint("DiscouragedApi")
+    private int getStyleResourceId(String styleName) {
+        SalesIQApplicationManager salesIQApplicationManager = ZohoSalesIQ.getApplicationManager();
+        int resourceId = 0;
+        if (salesIQApplicationManager != null && salesIQApplicationManager.getApplication() != null) {
+            resourceId = salesIQApplicationManager.getApplication().getResources().getIdentifier(
+                    styleName, "style",   // No I18N
+                    salesIQApplicationManager.getApplication().getPackageName());
 
         }
         return resourceId;
     }
 
     void setNotificationIconForAndroid(final String drawableName) {
-        int resourceId = getResourceId(drawableName);
+        int resourceId = getDrawableResourceId(drawableName);
         if (resourceId > 0) {
             ZohoSalesIQ.Notification.setIcon(resourceId);
+        }
+    }
+
+    void setThemeForAndroid(final String name) {
+        int resourceId = getStyleResourceId(name);
+        if (resourceId > 0) {
+            ZohoSalesIQ.setTheme(resourceId);
         }
     }
 

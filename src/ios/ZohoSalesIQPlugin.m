@@ -270,6 +270,14 @@ bool handleURI = YES;
     // No Implementation
 }
 
+- (void)setThemeForAndroid:(CDVInvokedUrlCommand*)command{
+    // No Implementation
+}
+
+- (void)syncThemeWithOSForAndroid:(CDVInvokedUrlCommand*)command{
+    // No Implementation
+}
+
 - (void)isMultipleOpenChatRestricted:(CDVInvokedUrlCommand*)command{
     BOOL restricted = [[ZohoSalesIQ Chat] multipleOpenRestricted];
     CDVPluginResult* pluginResult = nil;

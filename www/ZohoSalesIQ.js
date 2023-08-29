@@ -285,8 +285,13 @@ exports.openArticle = function (articleID, success, error) {
     exec(success, error, serviceName, 'openArticle', [articleID]);         // No I18N
 };
 
+// Deprecated
 exports.syncThemeWithOS = function (sync, success, error) {
     exec(success, error, serviceName, 'syncThemeWithOS', [sync]);         // No I18N
+};
+
+exports.syncThemeWithOSForAndroid = function (sync, success, error) {
+    exec(success, error, serviceName, 'syncThemeWithOSForAndroid', [sync]);         // No I18N
 };
 
 exports.isMultipleOpenChatRestricted = function (success, error) {
@@ -354,6 +359,10 @@ exports.setTabOrder = function (...tabNames) {
     exec(null, null, serviceName, 'setTabOrder', [tabNames]);         // No I18N
 }
 
+exports.setThemeForAndroid = function (name) {
+    exec(null, null, serviceName, 'setThemeForAndroid', [name]);         // No I18N
+}
+
 
 exports.Notification = {
     setIconForAndroid: function (resourceName) {
@@ -416,6 +425,6 @@ function parseResult(input) {
     }
 };
 
-window.addEventListener('orientationchange', function() {        
+window.addEventListener('orientationchange', function() {
     exec(null, null, serviceName, 'refreshLauncher', []);   // No I18N
 });
