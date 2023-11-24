@@ -1,4 +1,4 @@
-[![SupportedLanguages](https://img.shields.io/badge/Platforms-iOS%20%7C%20%20Android-green.svg)](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-installation.html) [![Version](https://img.shields.io/badge/version-5.1.1-blue.svg)](https://mobilisten.io/) [![Mobilisten NPM CD](https://github.com/zoho/SalesIQ-Mobilisten-Cordova/workflows/Mobilisten%20NPM%20CD/badge.svg)](https://github.com/zoho/SalesIQ-Mobilisten-Cordova/actions?query=workflow%3A%22Mobilisten+NPM+CD%22)
+[![SupportedLanguages](https://img.shields.io/badge/Platforms-iOS%20%7C%20%20Android-green.svg)](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-installation.html) [![Version](https://img.shields.io/badge/version-6.0.0-blue.svg)](https://mobilisten.io/) [![Mobilisten NPM CD](https://github.com/zoho/SalesIQ-Mobilisten-Cordova/workflows/Mobilisten%20NPM%20CD/badge.svg)](https://github.com/zoho/SalesIQ-Mobilisten-Cordova/actions?query=workflow%3A%22Mobilisten+NPM+CD%22)
 
 # SalesIQ Mobilisten SDK - Cordova Plugin
 
@@ -11,9 +11,10 @@ Connect with customers at every step of their journey. Give them the best in-app
 
 
 ## Requirements
-**iOS**: iOS 11 or above is required. The minimum version of Xcode required is Xcode 12.
 
-**Android**: `minSdkVersion` 21 and above is required.
+**iOS**: iOS 11 or above is required. The minimum version of Xcode required is Xcode 13.
+
+**Android**: `minSdkVersion` 21 or above is required.
 
 
 ## Installation

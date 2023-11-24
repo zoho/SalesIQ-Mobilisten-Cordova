@@ -25,8 +25,17 @@ exports.EVENT = {
     PERFORM_CHATACTION: "PERFORM_CHATACTION",   // No I18N
     CUSTOMTRIGGER: "CUSTOMTRIGGER", // No I18N
     BOT_TRIGGER: "BOT_TRIGGER", // No I18N
-    HANDLE_URL: "HANDLE_URL"    // No I18N
+    HANDLE_URL: "HANDLE_URL",    // No I18N
+    RESOURCE_OPENED: "RESOURCE_OPENED", // No I18N
+    RESOURCE_CLOSED: "RESOURCE_CLOSED", // No I18N
+    RESOURCE_LIKED: "RESOURCE_LIKED",   // No I18N
+    RESOURCE_DISLIKED: "RESOURCE_DISLIKED", // No I18N
 };
+
+exports.Resource = {
+    ARTICLES: "RESOURCE_ARTICLES"   // No I18N
+}
+
 
 exports.Launcher = {
     STATIC_MODE: 1,
@@ -48,7 +57,8 @@ exports.Event = {
 
 exports.Tab = {
     CONVERSATIONS: "TAB_CONVERSATIONS",
-    FAQ: "TAB_FAQ"
+    KNOWLEDGE_BASE: 'TAB_KNOWLEDGE_BASE',   //No I18N
+    FAQ: 'TAB_FAQ'  //No I18N
 }
 
 //Chat Types
@@ -391,6 +401,39 @@ exports.Logger = {
     },
     writeLogForiOS: function (log, level, success, error) {
         exec(success, error, serviceName, 'writeLogForiOS', [log, level]);         // No I18N
+    }
+}
+
+exports.KnowledgeBase = {
+//    isEnabled: function (type, callback) {
+//      RNZohoSalesIQ.isKnowledgeBaseEnabled(type, callback);
+//    },
+    setVisibility: function (type, shouldShow) {
+      exec(null, null, serviceName, 'setKnowledgeBaseVisibility', [type, shouldShow]);  // No I18N
+    },
+    categorize: function (type, shouldCategorize) {
+      exec(null, null, serviceName, 'categorizeKnowledgeBase',[type, shouldCategorize]);    // No I18N
+    },
+    combineDepartments: function (type, merge) {
+      exec(null, null, serviceName, 'combineKnowledgeBaseDepartments', [type, merge]);  // No I18N
+    },
+    // setRecentShowLimit: function (value) {
+    //   exec(null, null, serviceName, 'setKnowledgeBaseRecentShowLimit', [value]); // No I18N
+    // },
+    getResourceDepartments: function (success, error) {
+      exec(success, error, serviceName, 'getKnowledgeBaseResourceDepartments', []); // No I18N
+    },
+    open: function (type, id, success, error) {
+      exec(success, error, serviceName, 'openKnowledgeBase', [type, id]); // No I18N
+    },
+    getSingleResource: function (type, id, success, error) {
+      exec(success, error, serviceName, 'getKnowledgeBaseSingleResource', [type, id]);    // No I18N
+    },
+    getResources: function (type, departmentId = null, parentCategoryId = null, page = 1, limit = 99, searchKey = null, success, error) {
+      exec(success, error, serviceName, 'getKnowledgeBaseResources',[type, departmentId, parentCategoryId, page, limit, searchKey]);  // No I18N
+    },
+    getCategories: function (type, departmentId = null, parentCategoryId = null, success, error) {
+      exec(success, error, serviceName, 'getKnowledgeBaseCategories',[type, departmentId, parentCategoryId]); // No I18N
     }
 }
 

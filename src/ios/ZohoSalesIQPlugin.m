@@ -4,7 +4,7 @@
 #import <WebKit/WebKit.h>
 #import <Mobilisten/Mobilisten.h>
 
-@interface ZohoSalesIQPlugin : CDVPlugin <ZohoSalesIQDelegate, ZohoSalesIQChatDelegate, ZohoSalesIQFAQDelegate> {
+@interface ZohoSalesIQPlugin : CDVPlugin <ZohoSalesIQDelegate, ZohoSalesIQChatDelegate, ZohoSalesIQFAQDelegate, ZohoSalesIQKnowledgeBaseDelegate> {
     // Member variables go here.
 }
 
@@ -61,9 +61,16 @@ NSString *WARNING_LOG = @"WARNING";
 NSString *ERROR_LOG = @"ERROR";
 NSString *CONVERSATIONS = @"TAB_CONVERSATIONS";
 NSString *FAQ = @"TAB_FAQ";
+NSString *KNOWLEDGEBASE = @"TAB_KNOWLEDGE_BASE";
 NSString *HANDLE_URL = @"HANDLE_URL";
 NSString *EVENT_OPEN_URL = @"EVENT_OPEN_URL";
 NSString *EVENT_COMPLETE_CHAT_ACTION = @"EVENT_COMPLETE_CHAT_ACTION";
+NSString *RESOURCE_ARTICLES = @"RESOURCE_ARTICLES";
+
+NSString *RESOURCE_OPENED = @"RESOURCE_OPENED";
+NSString *RESOURCE_CLOSED = @"RESOURCE_CLOSED";
+NSString *RESOURCE_LIKED = @"RESOURCE_LIKED";
+NSString *RESOURCE_DISLIKED = @"RESOURCE_DISLIKED";
 
 bool handleURI = YES;
 
@@ -96,6 +103,7 @@ bool handleURI = YES;
     ZohoSalesIQ.delegate = self;
     [ZohoSalesIQ Chat].delegate = self;
     [ZohoSalesIQ FAQ].delegate = self;
+    [ZohoSalesIQ KnowledgeBase].delegate = self;
     [self performAdditionalSetup];
 }
 
@@ -563,7 +571,7 @@ bool handleURI = YES;
             NSString  *currentObject = [tabs objectAtIndex:i];
             if ([currentObject  isEqual: CONVERSATIONS]) {
                 [sendOrders addObject:[NSNumber numberWithInteger:0]];
-            } else if ([currentObject  isEqual: FAQ]) {
+            } else if ([currentObject  isEqual: FAQ] || [currentObject isEqual:KNOWLEDGEBASE]) {
                 [sendOrders addObject:[NSNumber numberWithInteger:1]];
             }
         }
@@ -887,6 +895,158 @@ bool handleURI = YES;
     }
 }
 
+//MARK:- KNOWLEGEBASE APIs
+- (void)setKnowledgeBaseVisibility:(CDVInvokedUrlCommand*)command{
+    NSString *type = [command.arguments objectAtIndex:0];
+    BOOL enable = [[command.arguments objectAtIndex:1] boolValue];
+    if ([type isEqualToString: RESOURCE_ARTICLES]) {
+        [[ZohoSalesIQ KnowledgeBase] setVisibility:SIQResourceTypeArticles enable: enable];
+    }
+}
+
+- (void)categorizeKnowledgeBase:(CDVInvokedUrlCommand*)command{
+    NSString *type = [command.arguments objectAtIndex:0];
+    BOOL enable = [[command.arguments objectAtIndex:1] boolValue];
+    if ([type isEqualToString: RESOURCE_ARTICLES]) {
+        [[ZohoSalesIQ KnowledgeBase] categorize:SIQResourceTypeArticles enable:enable];
+    }
+}
+
+- (void)combineKnowledgeBaseDepartments:(CDVInvokedUrlCommand*)command{
+    NSString *type = [command.arguments objectAtIndex:0];
+    BOOL enable = [[command.arguments objectAtIndex:1] boolValue];
+    if ([type isEqualToString: RESOURCE_ARTICLES]) {
+        [[ZohoSalesIQ KnowledgeBase] combineDepartments:SIQResourceTypeArticles enable:enable];
+    }
+}
+
+- (void)getKnowledgeBaseResourceDepartments:(CDVInvokedUrlCommand*)command{
+    [[ZohoSalesIQ KnowledgeBase] getResourceDepartmentsWithCompletion:^(id<SIQError> _Nullable error, NSArray<SIQResourceDepartment *> * _Nullable departments) {
+        CDVPluginResult* pluginResult = nil;
+        if (departments != nil) {
+            NSMutableArray *departmentsArray = [NSMutableArray array];
+            for (SIQResourceDepartment *department in departments) {
+                NSMutableDictionary *departmentDict = [NSMutableDictionary dictionary];
+                departmentDict[@"id"] = department.id;
+                departmentDict[@"name"] = department.name;
+                [departmentsArray addObject:departmentDict];
+            }
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:departmentsArray];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        } else {
+            NSMutableDictionary *errorDictionary = [self getSIQErrorObject:error];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+    }];
+}
+
+- (void)openKnowledgeBase:(CDVInvokedUrlCommand*)command{
+    NSString *type = [command.arguments objectAtIndex:0];
+    NSString *articleID = [command.arguments objectAtIndex:1];
+
+    if (type != nil && articleID != nil && ![articleID isKindOfClass:[NSNull class]]) {
+        if ([type isEqualToString: RESOURCE_ARTICLES]) {
+            [[ZohoSalesIQ KnowledgeBase] open:SIQResourceTypeArticles id:articleID completion:^(BOOL success, id<SIQError> _Nullable error) {
+                if (error != nil) {
+                    NSMutableDictionary *errorDictionary = [self getSIQErrorObject:error];
+                    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
+                    [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+                } else {
+                    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:YES];
+                    [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+                }
+            }];
+        }
+    }
+}
+
+- (void)getKnowledgeBaseSingleResource:(CDVInvokedUrlCommand*)command{
+    NSString *type = [command.arguments objectAtIndex:0];
+    NSString *articleID = [command.arguments objectAtIndex:1];
+
+    if (type != nil && articleID != nil && ![articleID isKindOfClass:[NSNull class]]) {
+        if ([type isEqualToString: RESOURCE_ARTICLES]) {
+            [[ZohoSalesIQ KnowledgeBase]getSingleResource:SIQResourceTypeArticles id:articleID completion:^(BOOL success, id<SIQError> _Nullable error, SIQKnowledgeBaseResource * _Nullable resource) {
+                CDVPluginResult* pluginResult = nil;
+                if (error != nil) {
+                    NSMutableDictionary *errorDictionary = [self getSIQErrorObject:error];
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
+                    [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+                } else {
+                    NSMutableArray *resourceObject = [self getResourceObject:resource];
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:resourceObject];
+                    [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+                }
+            }];
+        }
+    }
+}
+
+- (void)getKnowledgeBaseResources:(CDVInvokedUrlCommand*)command{
+    NSString *type = [command.arguments objectAtIndex:0];
+    NSString *departmentId = [command.arguments objectAtIndex:1];
+    NSString *parentCategoryId = [command.arguments objectAtIndex:2];
+    int page = [[command.arguments objectAtIndex:3] intValue];
+    int limit = [[command.arguments objectAtIndex:4] intValue];
+    NSString *searchKey = [command.arguments objectAtIndex:5];
+    
+    if ([departmentId isKindOfClass:[NSNull class]]) {
+        departmentId = NULL;
+    }
+    if ([parentCategoryId isKindOfClass:[NSNull class]]) {
+        parentCategoryId = NULL;
+    }
+    if ([searchKey isKindOfClass:[NSNull class]]) {
+        searchKey = NULL;
+    }
+    
+    if ([type isEqualToString: RESOURCE_ARTICLES]) {
+        [[ZohoSalesIQ KnowledgeBase] getResources:SIQResourceTypeArticles departmentId:departmentId parentCategoryId:parentCategoryId searchKey:searchKey page:page limit:limit completion:^(BOOL success, id<SIQError> _Nullable error, NSArray<SIQKnowledgeBaseResource *> * _Nullable resources, BOOL moreDataAvailable) {
+            CDVPluginResult* pluginResult = nil;
+            NSNumber *available = [NSNumber numberWithBool:moreDataAvailable];
+            if (error != nil) {
+                NSMutableDictionary *errorDictionary = [self getSIQErrorObject:error];
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
+                [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+            } else {
+                NSMutableArray *resourceObject = [self getResourceList:resources];
+                NSDictionary *resultDict = @{@"resources": resourceObject, @"moreDataAvailable": available};
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:resultDict];
+                [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+            }
+        }];
+    }
+}
+
+- (void)getKnowledgeBaseCategories:(CDVInvokedUrlCommand*)command {
+    NSString *type = [command.arguments objectAtIndex:0];
+    NSString *departmentId = [command.arguments objectAtIndex:1];
+    NSString *parentCategoryId = [command.arguments objectAtIndex:2];
+    
+    if ([departmentId isKindOfClass:[NSNull class]]) {
+        departmentId = NULL;
+    }
+    if ([parentCategoryId isKindOfClass:[NSNull class]]) {
+        parentCategoryId = NULL;
+    }
+    if ([type isEqualToString: RESOURCE_ARTICLES]) {
+        [[ZohoSalesIQ KnowledgeBase] getCategories:SIQResourceTypeArticles departmentId:departmentId parentCategoryId:parentCategoryId completion:^(BOOL success, id<SIQError> _Nullable error, NSArray<SIQKnowledgeBaseCategory *> * _Nullable categories) {
+            CDVPluginResult* pluginResult = nil;
+            if (error != nil) {
+                NSMutableDictionary *errorDictionary = [self getSIQErrorObject:error];
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
+                [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+            } else {
+                NSMutableArray *resourceObject = [self getCategoryList:categories];
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:resourceObject];
+                [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+            }
+        }];
+    }
+}
+
+
 //MARK:- INTERNAL HELPER METHODS
 
 void mainThread(void (^block)(void)) {
@@ -981,6 +1141,213 @@ void mainThread(void (^block)(void)) {
     [errorDict setObject: @(code)  forKey: @"code"];
     [errorDict setObject: message  forKey: @"message"];
     return errorDict;
+}
+
+- (NSMutableDictionary *)getSIQErrorObject:(id<SIQError>)siqError {
+    NSMutableDictionary *errorDictionary = [NSMutableDictionary dictionary];
+    [errorDictionary setObject:@(siqError.code) forKey:@"code"];
+    [errorDictionary setObject:siqError.message forKey:@"message"];
+    return errorDictionary;
+}
+
+- (NSMutableDictionary *)prepareResourceInformation:(enum SIQResourceType)type resource:(SIQKnowledgeBaseResource * _Nullable)resource {
+    NSMutableDictionary *resourceInformation = [NSMutableDictionary dictionary];
+    NSMutableDictionary *resourceObject = [self getResourceObject:resource];
+    
+    if (resourceObject != nil) {
+        [resourceInformation setObject:resourceObject forKey:@"resource"];
+    }
+    
+    if (type == SIQResourceTypeArticles) {
+        [resourceInformation setObject:RESOURCE_ARTICLES forKey:@"type"];
+    }
+    
+    return resourceInformation;
+}
+
+- (NSMutableArray *)getResourceList: (NSArray<SIQKnowledgeBaseResource *> *) resources {
+    NSMutableArray *resourceArray = [NSMutableArray array];
+    
+    NSInteger i = 0;
+    for (SIQKnowledgeBaseResource *resource in resources){
+        NSMutableDictionary *resourceDict = [NSMutableDictionary dictionary];
+        resourceDict = [self getResourceObject:resource];
+        [resourceArray insertObject:resourceDict atIndex:i];
+        i = i + 1;
+    }
+    return resourceArray;
+}
+
+- (NSMutableArray *)getCategoryList: (NSArray<SIQKnowledgeBaseCategory *> *) categories
+{
+    NSMutableArray *categoryArray = [NSMutableArray array];
+    
+    NSInteger i = 0;
+    for (SIQKnowledgeBaseCategory *category in categories){
+        NSMutableDictionary *categoryDict = [NSMutableDictionary dictionary];
+        categoryDict = [self getCategoryObject:category];
+        [categoryArray insertObject:categoryDict atIndex:i];
+        i = i + 1;
+    }
+    return categoryArray;
+}
+
+- (NSMutableDictionary *)getCategoryObject: (SIQKnowledgeBaseCategory*)category {
+    NSMutableDictionary *categoryDictionary = [NSMutableDictionary dictionary];
+    if([category id] != nil) {
+        NSString *categoryID = [category id];
+        [categoryDictionary setObject: categoryID  forKey: @"id"];
+        
+        if ([category name] != nil) {
+            [categoryDictionary setObject: [category name]  forKey: @"name"];
+        }
+        if ([category departmentId] != nil) {
+            [categoryDictionary setObject: [category departmentId]  forKey: @"departmentId"];
+        }
+        if ([category count] != nil) {
+            [categoryDictionary setObject: [category count]  forKey: @"count"];
+        }
+        if ([category childrenCount] != nil) {
+            [categoryDictionary setObject: [category childrenCount]  forKey: @"childrenCount"];
+        }
+        if ([category order] != nil) {
+            [categoryDictionary setObject: [category order]  forKey: @"order"];
+        }
+        if ([category parentCategoryId] != nil) {
+            [categoryDictionary setObject: [category parentCategoryId]  forKey: @"parentCategoryId"];
+        }
+        if ([category resourceModifiedTime] != nil) {
+            NSDate *modifiedTime = [category resourceModifiedTime];
+            int time = (int)[modifiedTime timeIntervalSince1970];
+            [categoryDictionary setObject: @(time) forKey: @"resourceModifiedTime"];
+        }
+    }
+    return categoryDictionary;
+}
+
+- (NSMutableDictionary *)getResourceObject: (SIQKnowledgeBaseResource*)resource {
+    NSMutableDictionary *resourceDictionary = [NSMutableDictionary dictionary];
+    if([resource id] != nil){
+        NSString *articleID = [resource id];
+        [resourceDictionary setObject: articleID  forKey: @"id"];
+        
+        if ([resource category] != nil) {
+            NSMutableDictionary *resourceCategory = [NSMutableDictionary dictionary];
+            if ([[resource category] id] != nil) {
+                [resourceCategory setObject: [[resource category] id]  forKey: @"id"];
+            }
+            if ([[resource category] name] != nil) {
+                [resourceCategory setObject: [[resource category] name]  forKey: @"name"];
+            }
+            [resourceDictionary setObject: resourceCategory  forKey: @"category"];
+        }
+        
+        if ([resource title] != nil) {
+            [resourceDictionary setObject: [resource title]  forKey: @"title"];
+        }
+        
+        if ([resource departmentId] != nil) {
+            [resourceDictionary setObject: [resource departmentId]  forKey: @"departmentId"];
+        }
+        
+        if ([resource language] != nil) {
+            NSMutableDictionary *resourceLanguage = [NSMutableDictionary dictionary];
+            if ([[resource language] id] != nil) {
+                [resourceLanguage setObject: [[resource language] id]  forKey: @"id"];
+            }
+            if ([[resource language] code] != nil) {
+                [resourceLanguage setObject: [[resource language] code]  forKey: @"code"];
+            }
+            [resourceDictionary setObject: resourceLanguage  forKey: @"language"];
+        }
+        
+        if ([resource creator] != nil) {
+            NSMutableDictionary *resourceCreator = [NSMutableDictionary dictionary];
+            if ([[resource creator] id] != nil) {
+                [resourceCreator setObject: [[resource creator] id]  forKey: @"id"];
+            }
+            if ([[resource creator] name] != nil) {
+                [resourceCreator setObject: [[resource creator] name]  forKey: @"name"];
+            }
+            if ([[resource creator] email] != nil) {
+                [resourceCreator setObject: [[resource creator] email]  forKey: @"email"];
+            }
+            if ([[resource creator] displayName] != nil) {
+                [resourceCreator setObject: [[resource creator] displayName]  forKey: @"displayName"];
+            }
+            if ([[resource creator] imageUrl] != nil) {
+                [resourceCreator setObject: [[resource creator] imageUrl]  forKey: @"imageUrl"];
+            }
+            [resourceDictionary setObject: resourceCreator  forKey: @"creator"];
+        }
+        
+        if ([resource modifier] != nil) {
+            NSMutableDictionary *resourceModifier = [NSMutableDictionary dictionary];
+            if ([[resource modifier] id] != nil) {
+                [resourceModifier setObject: [[resource modifier] id]  forKey: @"id"];
+            }
+            if ([[resource modifier] name] != nil) {
+                [resourceModifier setObject: [[resource modifier] name]  forKey: @"name"];
+            }
+            if ([[resource modifier] email] != nil) {
+                [resourceModifier setObject: [[resource modifier] email]  forKey: @"email"];
+            }
+            if ([[resource modifier] displayName] != nil) {
+                [resourceModifier setObject: [[resource modifier] displayName]  forKey: @"displayName"];
+            }
+            if ([[resource modifier] imageUrl] != nil) {
+                [resourceModifier setObject: [[resource modifier] imageUrl]  forKey: @"imageUrl"];
+            }
+            [resourceDictionary setObject: resourceModifier  forKey: @"modifier"];
+        }
+        
+        if ([resource createdTime] != nil) {
+            NSDate *createdTime = [resource createdTime];
+            int time = (int)[createdTime timeIntervalSince1970];
+            [resourceDictionary setObject: @(time) forKey: @"createdTime"];
+        }
+        
+        if ([resource modifiedTime] != nil) {
+            NSDate *createdTime = [resource modifiedTime];
+            int time = (int)[createdTime timeIntervalSince1970];
+            [resourceDictionary setObject: @(time) forKey: @"modifiedTime"];
+        }
+        
+        if ([resource publicUrl] != nil) {
+            [resourceDictionary setObject: [resource publicUrl]  forKey: @"publicUrl"];
+        }
+        
+        if ([resource stats] != nil) {
+            NSMutableDictionary *resourceStats = [NSMutableDictionary dictionary];
+            if ([[resource stats] liked] != nil) {
+                [resourceStats setObject: [[resource stats] liked]  forKey: @"liked"];
+            }
+            if ([[resource stats] disliked] != nil) {
+                [resourceStats setObject: [[resource stats] disliked]  forKey: @"disliked"];
+            }
+            if ([[resource stats] used] != nil) {
+                [resourceStats setObject: [[resource stats] used]  forKey: @"used"];
+            }
+            if ([[resource stats] viewed] != nil) {
+                [resourceStats setObject: [[resource stats] viewed]  forKey: @"viewed"];
+            }
+            [resourceDictionary setObject: resourceStats  forKey: @"stats"];
+        }
+        
+        if ([resource content] != nil) {
+            [resourceDictionary setObject: [resource content]  forKey: @"content"];
+        }
+        
+        SIQArticleRatedType ratedType = [resource ratedType];
+        if (ratedType == SIQArticleRatedTypeLiked) {
+            [resourceDictionary setObject: @"liked" forKey:@"ratedType"];
+        }
+        if (ratedType == SIQArticleRatedTypeDisliked) {
+            [resourceDictionary setObject: @"disliked" forKey:@"ratedType"];
+        }
+        
+    }
+    return resourceDictionary;
 }
 
 - (NSMutableArray *)getFAQCategoryList: (NSArray<SIQFAQCategory *> *) categories
@@ -1436,6 +1803,26 @@ void mainThread(void (^block)(void)) {
 
 - (void)handleBotTrigger {
     [self sendEvent:BOT_TRIGGER body:nil];
+}
+
+- (void)handleResourceOpened:(enum SIQResourceType)type resource:(SIQKnowledgeBaseResource * _Nullable)resource {
+    NSMutableDictionary *resourceInformation = [self prepareResourceInformation:type resource:resource];
+    [self sendEvent:RESOURCE_OPENED body: resourceInformation];
+}
+
+- (void)handleResourceClosed:(enum SIQResourceType)type resource:(SIQKnowledgeBaseResource * _Nullable)resource {
+    NSMutableDictionary *resourceInformation = [self prepareResourceInformation:type resource:resource];
+    [self sendEvent:RESOURCE_CLOSED body: resourceInformation];
+}
+
+- (void)handleResourceLiked:(enum SIQResourceType)type resource:(SIQKnowledgeBaseResource * _Nullable)resource {
+    NSMutableDictionary *resourceInformation = [self prepareResourceInformation:type resource:resource];
+    [self sendEvent:RESOURCE_LIKED body: resourceInformation];
+}
+
+- (void)handleResourceDisliked:(enum SIQResourceType)type resource:(SIQKnowledgeBaseResource * _Nullable)resource {
+    NSMutableDictionary *resourceInformation = [self prepareResourceInformation:type resource:resource];
+    [self sendEvent:RESOURCE_DISLIKED body: resourceInformation];
 }
 
 @end

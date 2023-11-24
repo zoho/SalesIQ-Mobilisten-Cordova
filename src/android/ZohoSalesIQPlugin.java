@@ -16,6 +16,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.content.res.AppCompatResources;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
 import com.zoho.commons.ChatComponent;
 import com.zoho.commons.LauncherModes;
 import com.zoho.commons.LauncherProperties;
@@ -41,13 +43,20 @@ import com.zoho.livechat.android.listeners.SalesIQCustomActionListener;
 import com.zoho.livechat.android.listeners.SalesIQListener;
 import com.zoho.livechat.android.models.SalesIQArticle;
 import com.zoho.livechat.android.models.SalesIQArticleCategory;
+import com.zoho.livechat.android.modules.common.DataModule;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.Resource;
+import com.zoho.livechat.android.modules.knowledgebase.ui.entities.ResourceCategory;
+import com.zoho.livechat.android.modules.knowledgebase.ui.entities.ResourceDepartment;
 import com.zoho.livechat.android.modules.knowledgebase.ui.listeners.OpenResourceListener;
+import com.zoho.livechat.android.modules.knowledgebase.ui.listeners.ResourceCategoryListener;
+import com.zoho.livechat.android.modules.knowledgebase.ui.listeners.ResourceDepartmentsListener;
+import com.zoho.livechat.android.modules.knowledgebase.ui.listeners.ResourceListener;
 import com.zoho.livechat.android.modules.knowledgebase.ui.listeners.ResourcesListener;
 import com.zoho.livechat.android.modules.knowledgebase.ui.listeners.SalesIQKnowledgeBaseListener;
 import com.zoho.livechat.android.operation.SalesIQApplicationManager;
 import com.zoho.livechat.android.utils.LiveChatUtil;
 import com.zoho.salesiqembed.ZohoSalesIQ;
+import com.zoho.salesiqembed.ktx.GsonExtensionsKt;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -60,6 +69,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -111,6 +121,11 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
     private static final String EVENT_OPEN_URL = "EVENT_OPEN_URL";  // No I18N
     private static final String EVENT_COMPLETE_CHAT_ACTION = "EVENT_COMPLETE_CHAT_ACTION";// No I18N
+
+    private static final String EVENT_RESOURCE_LIKED = "RESOURCE_LIKED";         // No I18N
+    private static final String EVENT_RESOURCE_DISLIKED = "RESOURCE_DISLIKED";         // No I18N
+    private static final String EVENT_RESOURCE_OPENED = "RESOURCE_OPENED";         // No I18N
+    private static final String EVENT_RESOURCE_CLOSED = "RESOURCE_CLOSED";         // No I18N
 
     private static final Handler HANDLER = new Handler(Looper.getMainLooper());
 
@@ -341,6 +356,10 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             }
             if (action.equals("setThemeForAndroid")) {
                 this.setThemeForAndroid((String) data.get(0));
+            }
+
+            if (action.contains("KnowledgeBase")) {
+                KnowledgeBase.handleKnowledgeBaseCalls(action, data, callbackContext);
             }
             return true;
         }
@@ -1173,10 +1192,10 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         }
     }
 
-    private void eventEmitter(String event, Object value) {
+    void eventEmitter(String event, Object value) {
         String pluginName = "ZohoSalesIQ";         // No I18N
         cordova.getActivity().runOnUiThread(() -> webView.loadUrl("javascript:" + pluginName +
-                ".sendEventToJs('" + event + "','" + value + "');"));         // No I18N
+                ".sendEventToJs('" + event + "', " + (value != null ? JSONObject.quote(value.toString()) : null) + ");"));         // No I18N
     }
 
     private Boolean isValidFilterName(String filterName) {
@@ -1242,7 +1261,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                 visitorMap.put("lastMessageTime", LiveChatUtil.getString(lastMessage.getTime()));         // No I18N
                 lastMessageMap.put("time", LiveChatUtil.getString(lastMessage.getTime()));         // No I18N
             }
-            // lastMessageMap.put("sender_id", lastMessage.getSenderId());            
+            // lastMessageMap.put("sender_id", lastMessage.getSenderId());
             // lastMessageMap.put("type", lastMessage.getType());
             lastMessageMap.put("is_read", lastMessage.isRead());
             // lastMessageMap.put("sent_by_visitor", lastMessage.getSentByVisitor());
@@ -1439,29 +1458,63 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         @Override
         public void handleResourceOpened(@NonNull ZohoSalesIQ.ResourceType resourceType, @Nullable Resource resource) {
             if (resource != null) {
-                eventEmitter(ARTICLE_OPENED, resource.getId());
+                JSONObject result = new JSONObject();
+                try {
+                    JSONObject jsonObject = getAsJSONObject(resource);
+                    result.put("resource", jsonObject);
+                    addResourceType(resourceType, result);
+                    eventEmitter(EVENT_RESOURCE_OPENED, result);
+                    eventEmitter(ARTICLE_OPENED, resource.getId());
+                } catch (JSONException ignored) {}
             }
         }
 
         @Override
         public void handleResourceClosed(@NonNull ZohoSalesIQ.ResourceType resourceType, @Nullable Resource resource) {
             if (resource != null) {
-                eventEmitter(ARTICLE_CLOSED, resource.getId());
+                JSONObject result = new JSONObject();
+                try {
+                    result.put("resource", getAsJSONObject(resource));
+                    addResourceType(resourceType, result);
+                    eventEmitter(EVENT_RESOURCE_CLOSED, result);
+                    eventEmitter(ARTICLE_CLOSED, resource.getId());
+                } catch (JSONException ignored) {}
             }
         }
 
         @Override
         public void handleResourceLiked(@NonNull ZohoSalesIQ.ResourceType resourceType, @Nullable Resource resource) {
             if (resource != null) {
-                eventEmitter(ARTICLE_LIKED, resource.getId());
+                JSONObject result = new JSONObject();
+                try {
+                    result.put("resource", getAsJSONObject(resource));
+                    addResourceType(resourceType, result);
+                    eventEmitter(EVENT_RESOURCE_LIKED, result);
+                    eventEmitter(ARTICLE_LIKED, resource.getId());
+                } catch (JSONException ignored) {}
             }
         }
 
         @Override
         public void handleResourceDisliked(@NonNull ZohoSalesIQ.ResourceType resourceType, @Nullable Resource resource) {
             if (resource != null) {
-                eventEmitter(ARTICLE_DISLIKED, resource.getId());
+                JSONObject result = new JSONObject();
+                try {
+                    result.put("resource", getAsJSONObject(resource));
+                    addResourceType(resourceType, result);
+                    eventEmitter(EVENT_RESOURCE_DISLIKED, result);
+                    eventEmitter(ARTICLE_DISLIKED, resource.getId());
+                } catch (JSONException ignored) {}
             }
+        }
+
+        private JSONObject addResourceType(ZohoSalesIQ.ResourceType resourceType, JSONObject resource) {
+            try {
+                if (resourceType == ZohoSalesIQ.ResourceType.Articles) {
+                    resource.put("type", KnowledgeBase.RESOURCE_ARTICLES);
+                }
+            } catch (JSONException e) {}
+            return resource;
         }
 
         @Override
@@ -1776,6 +1829,250 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
     void isLoggerEnabled(final CallbackContext callbackContext) {
         HANDLER.post(() -> callbackContext.success(ZohoSalesIQ.Logger.isEnabled() ? 1 : 0));
+    }
+
+    static class KnowledgeBase {
+
+        static final String RESOURCE_ARTICLES = "RESOURCE_ARTICLES";    // No I18N
+
+        private static @Nullable ZohoSalesIQ.ResourceType getResourceType(String value) {
+            ZohoSalesIQ.ResourceType resourceType;
+            if (RESOURCE_ARTICLES.equals(value)) {
+                resourceType = ZohoSalesIQ.ResourceType.Articles;
+            } else {
+                resourceType = null;
+            }
+            return resourceType;
+        }
+
+        static void setVisibility(final String type, final boolean shouldShow) {
+            executeIfResourceTypeIsValid(type, null, () -> ZohoSalesIQ.KnowledgeBase.setVisibility(getResourceType(type), shouldShow));
+        }
+
+        static void categorize(final String type, final boolean shouldCategorize) {
+            executeIfResourceTypeIsValid(type, null, () -> ZohoSalesIQ.KnowledgeBase.categorize(getResourceType(type), shouldCategorize));
+        }
+
+        static void combineDepartments(final String type, final boolean merge) {
+            executeIfResourceTypeIsValid(type, null, () -> ZohoSalesIQ.KnowledgeBase.combineDepartments(getResourceType(type), merge));
+        }
+
+        //void  setRecentShowLimit(String type) {
+        //   ZohoSalesIQ.KnowledgeBase.setRecentShowLimit(value)
+        // }
+
+        static void getResourceDepartments(final CallbackContext callbackContext) {
+            ZohoSalesIQ.KnowledgeBase.getResourceDepartments(new ResourceDepartmentsListener() {
+                @Override
+                public void onSuccess(@NonNull List<ResourceDepartment> resourceDepartments) {
+                    callbackContext.success(getAsJSONArray(resourceDepartments));
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String message) {
+                    callbackContext.error(getErrorJson(code, message));
+                }
+            });
+        }
+
+        static void open(final String type, final String id, final CallbackContext callbackContext) {
+            executeIfResourceTypeIsValid(type, callbackContext, () -> ZohoSalesIQ.KnowledgeBase.open(getResourceType(type), id, new OpenResourceListener() {
+                @Override
+                public void onSuccess() {
+                    callbackContext.success();
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String message) {
+                    callbackContext.error(getErrorJson(code, message));
+                }
+            }));
+        }
+
+        static void getSingleResource(final String type, final String id, final CallbackContext callbackContext) {
+            executeIfResourceTypeIsValid(type, callbackContext, () -> ZohoSalesIQ.KnowledgeBase.getSingleResource(getResourceType(type), id, new ResourceListener() {
+                @Override
+                public void onSuccess(@Nullable Resource resource) {
+                    callbackContext.success(getAsJSONObject(resource));
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String message) {
+                    callbackContext.error(getErrorJson(code, message));
+                }
+            }));
+        }
+
+        static void getResources(final String type, final String departmentID, final String parentCategoryID, final int page, final int limit, final String searchKey, final CallbackContext callbackContext) {
+            executeIfResourceTypeIsValid(type, callbackContext, () -> ZohoSalesIQ.KnowledgeBase.getResources(getResourceType(type), departmentID, parentCategoryID, searchKey, page, limit, new ResourcesListener() {
+                @Override
+                public void onSuccess(@NonNull List<Resource> resources, boolean moreDataAvailable) {
+                    JSONObject successJson = new JSONObject();
+                    try {
+                        successJson.put("resources", getAsJSONArray(resources));
+                        successJson.put("moreDataAvailable", moreDataAvailable);
+                    } catch (JSONException ignored) {}
+                    callbackContext.success(successJson);
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String message) {
+                    callbackContext.error(getErrorJson(code, message));
+                }
+            }));
+        }
+
+        static void getCategories(final String type, final String departmentID, final String parentCategoryID, final CallbackContext callbackContext) {
+            executeIfResourceTypeIsValid(type, callbackContext, () -> ZohoSalesIQ.KnowledgeBase.getCategories(getResourceType(type), departmentID, parentCategoryID, new ResourceCategoryListener() {
+                @Override
+                public void onSuccess(@NonNull List<ResourceCategory> resourceCategories) {
+                    callbackContext.success(getAsJSONArray(resourceCategories));
+                }
+
+                @Override
+                public void onFailure(int code, @Nullable String message) {
+                    callbackContext.error(getErrorJson(code, message));
+                }
+            }));
+        }
+
+        private static void executeIfResourceTypeIsValid(String type, CallbackContext callbackContext, Runnable runnable) {
+            ZohoSalesIQ.ResourceType resourceType = getResourceType(type);
+            if (resourceType != null) {
+                runnable.run();
+            } else {
+                if (callbackContext != null) {
+                    callbackContext.error(getResourceTypeErrorMap());
+                }
+            }
+        }
+
+        static void handleKnowledgeBaseCalls(String action, JSONArray data, CallbackContext callbackContext) {
+            try {
+                if (action.equals("getKnowledgeBaseResourceDepartments")) {
+                    KnowledgeBase.getResourceDepartments(callbackContext);
+                } else {
+                    String type = data.get(0).toString();
+                    switch (action) {
+                        case "setKnowledgeBaseVisibility":
+                            KnowledgeBase.setVisibility(type, LiveChatUtil.getBoolean(data.get(1)));
+                            break;
+                        case "categorizeKnowledgeBase":
+                            KnowledgeBase.categorize(type, LiveChatUtil.getBoolean(data.get(1)));
+                            break;
+                        case "combineKnowledgeBaseDepartments":
+                            KnowledgeBase.combineDepartments(type, LiveChatUtil.getBoolean(data.get(1)));
+                            break;
+                        case "openKnowledgeBase":
+                            KnowledgeBase.open(type, LiveChatUtil.getString(data.get(1)), callbackContext);
+                            break;
+                        case "getKnowledgeBaseSingleResource":
+                            KnowledgeBase.getSingleResource(type, LiveChatUtil.getString(data.get(1)), callbackContext);
+                            break;
+                        case "getKnowledgeBaseResources":
+                            KnowledgeBase.getResources(type, getStringOrNull(data.get(1)), getStringOrNull(data.get(2)), LiveChatUtil.getInteger(data.get(3)), LiveChatUtil.getInteger(data.get(4)), getStringOrNull(data.get(5)), callbackContext);
+                            break;
+                        case "getKnowledgeBaseCategories":
+                            KnowledgeBase.getCategories(type, getStringOrNull(data.get(1)), getStringOrNull(data.get(2)), callbackContext);
+                            break;
+                    }
+                }
+            } catch (JSONException ignored) {}
+        }
+
+        private static @Nullable String getStringOrNull(Object object) {
+            String value;
+            if (object == null || object == JSONObject.NULL) {
+                value = null;
+            } else {
+                value = (String) object;
+            }
+            return value;
+        }
+
+        static JSONObject getResourceTypeErrorMap() {
+            JSONObject jsonObject = new JSONObject();
+            try {
+                jsonObject.put("code", 100);         // No I18N
+                jsonObject.put("message", "Invalid resource type");         // No I18N
+            } catch (JSONException ignored) {}
+            return jsonObject;
+        }
+    }
+
+    static JSONArray getAsJSONArray(Object object) {
+        JSONArray finalJsonArray = new JSONArray();
+        try {
+            if (object != null) {
+                Gson gson = DataModule.getGson();
+                JsonArray jsonObjectList = JsonParser.parseString(gson.toJson(object)).getAsJsonArray();
+                int size = jsonObjectList == null ? 0 : jsonObjectList.size();
+                for (int index = 0; index < size; index++) {
+                    finalJsonArray.put(getAsJSONObject(jsonObjectList.get(index)));
+                }
+            }
+        } catch (Exception ignored) {}
+        return finalJsonArray;
+    }
+
+    static JSONObject getAsJSONObject(Object object) {
+        JSONObject jsonResult = new JSONObject();
+        if (object != null) {
+            JSONObject finalJsonObject;
+            if (object instanceof JSONObject) {
+                finalJsonObject = (JSONObject) object;
+            } else {
+                try {
+                    finalJsonObject = new JSONObject(DataModule.getGson().toJson(object));
+                } catch (Exception exception) {
+                    finalJsonObject = GsonExtensionsKt.fromJsonSafe(DataModule.getGson(), DataModule.getGson().toJson(object), JSONObject.class);
+                }
+            }
+            if (finalJsonObject != null) {
+                for (Iterator<String> it = finalJsonObject.keys(); it.hasNext(); ) {
+                    String key = it.next();
+                    boolean hasNonValue = !finalJsonObject.isNull(key);
+                    if (hasNonValue) {
+                        try {
+                            Object value = finalJsonObject.get(key);
+                            if (value instanceof JSONObject) {
+                                jsonResult.put(convertToCamelCase(key), getAsJSONObject(value));
+                            } else {
+                                jsonResult.put(convertToCamelCase(key), value);
+                            }
+                        } catch (JSONException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            }
+        }
+        return jsonResult;
+    }
+
+    static String convertToCamelCase(String input) {
+        StringBuilder camelCase = new StringBuilder(30);
+        boolean capitalizeNext = false;
+        if (input != null) {
+            for (char c : input.toCharArray()) {
+                if (c == '_') {
+                    capitalizeNext = true;
+                } else {
+                    camelCase.append(capitalizeNext ? Character.toUpperCase(c) : c);
+                    capitalizeNext = false;
+                }
+            }
+        }
+        return camelCase.toString();
+    }
+
+    static JSONObject getErrorJson(int code, String message) {
+        JSONObject errorMap = new JSONObject();
+        try {
+            errorMap.put("code", code);         // No I18N
+            errorMap.put("message", message);         // No I18N
+        } catch (JSONException ignored) {}
+        return errorMap;
     }
 
     // void clearLogsForiOS() {}
