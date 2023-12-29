@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<plugin id="cordova-zohosalesiq-mobilisten" version="6.0.0"
+<plugin id="cordova-zohosalesiq-mobilisten" version="7.0.0"
     xmlns="http://apache.org/cordova/ns/plugins/1.0">
     <name>ZohoSalesIQ</name>
     <js-module name="ZohoSalesIQ" src="www/ZohoSalesIQ.js">
@@ -11,7 +11,7 @@
                 <source url="https://github.com/CocoaPods/Specs.git" />
             </config>
             <pods use-frameworks="true">
-                <pod name="Mobilisten" spec="7.0.0" />
+                <pod name="Mobilisten" spec="8.0.0" />
             </pods>
         </podspec>
         <config-file parent="/*" target="config.xml">

@@ -30,6 +30,7 @@ exports.EVENT = {
     RESOURCE_CLOSED: "RESOURCE_CLOSED", // No I18N
     RESOURCE_LIKED: "RESOURCE_LIKED",   // No I18N
     RESOURCE_DISLIKED: "RESOURCE_DISLIKED", // No I18N
+    HANDLE_CUSTOM_LAUNCHER_VISIBILITY: "HANDLE_CUSTOM_LAUNCHER_VISIBILITY",// No I18N
 };
 
 exports.Resource = {
@@ -40,13 +41,28 @@ exports.Resource = {
 exports.Launcher = {
     STATIC_MODE: 1,
     FLOATING_MODE: 2,
-    HORIZONTAL_LEFT: "LAUNCHER_HORIZONTAL_LEFT",
-    HORIZONTAL_RIGHT: "LAUNCHER_HORIZONTAL_RIGHT",
-    VERTICAL_TOP: "LAUNCHER_VERTICAL_TOP",
-    VERTICAL_BOTTOM: "LAUNCHER_VERTICAL_BOTTOM",
+    HORIZONTAL_LEFT: "LAUNCHER_HORIZONTAL_LEFT",    // No I18N
+    HORIZONTAL_RIGHT: "LAUNCHER_HORIZONTAL_RIGHT",  // No I18N
+    VERTICAL_TOP: "LAUNCHER_VERTICAL_TOP",          // No I18N
+    VERTICAL_BOTTOM: "LAUNCHER_VERTICAL_BOTTOM",    // No I18N
+
+    VisibilityMode: {
+        ALWAYS: "LAUNCHER_VISIBILITY_MODE_ALWAYS",  // No I18N
+        NEVER: "LAUNCHER_VISIBILITY_MODE_NEVER",    // No I18N
+        WHEN_ACTIVE_CHAT: "LAUNCHER_VISIBILITY_MODE_WHEN_ACTIVE_CHAT",  // No I18N
+    },
 
     setIconForAndroid: function (resourceName) {
         exec(null, null, serviceName, 'setLauncherIconForAndroid', [resourceName]);         // No I18N
+    },
+    show: function (visibilityMode) {
+        exec(null, null, serviceName, 'setLauncherVisibilityMode', [visibilityMode]);         // No I18N
+    },
+    setVisibilityModeToCustomLauncher: function (visibilityMode) {
+        exec(null, null, serviceName, 'setVisibilityModeToCustomLauncher', [visibilityMode]);         // No I18N
+    },
+    enableDragToDismiss: function (enable) {
+        exec(null, null, serviceName, 'enableLauncherDragToDismiss', [enable]);         // No I18N
     }
 }
 
@@ -340,7 +356,7 @@ exports.sendEventToJs = function (name, body) {
                 if (body) {
                     listener_list[i](parseResult(body));
                 } else {
-                    listener_list[i]();
+                    listener_list[i](body);
                 }
             }
         }
@@ -359,9 +375,19 @@ exports.printDebugLogsForAndroid = function (value) {
     exec(null, null, serviceName, 'printDebugLogsForAndroid', [value]);         // No I18N
 }
 
+exports.dismissUI = function () {
+    exec(null, null, serviceName, 'dismissUI', []);         // No I18N
+},
+
 exports.Chat = {
     shouldOpenUrl: function (value) {
         exec(null, null, serviceName, 'shouldOpenUrl', [value]);         // No I18N
+    },
+    showFeedbackAfterSkip: function (enable) {
+        exec(null, null, serviceName, 'showChatFeedbackAfterSkip', [enable]);         // No I18N
+    },
+    showFeedback(upToDuration) {
+        exec(null, null, serviceName, 'showChatFeedbackUpTo', [upToDuration]);         // No I18N
     }
 }
 
@@ -379,7 +405,6 @@ exports.Notification = {
         exec(null, null, serviceName, 'setNotificationIconForAndroid', [resourceName]);         // No I18N
     }
 }
-
 
 exports.Logger = {
 
@@ -405,9 +430,9 @@ exports.Logger = {
 }
 
 exports.KnowledgeBase = {
-//    isEnabled: function (type, callback) {
-//      RNZohoSalesIQ.isKnowledgeBaseEnabled(type, callback);
-//    },
+    isEnabled: function (type, success, error) {
+      exec(success, error, serviceName, 'isKnowledgeBaseEnabled', [type]);  // No I18N
+    },
     setVisibility: function (type, shouldShow) {
       exec(null, null, serviceName, 'setKnowledgeBaseVisibility', [type, shouldShow]);  // No I18N
     },
@@ -417,9 +442,9 @@ exports.KnowledgeBase = {
     combineDepartments: function (type, merge) {
       exec(null, null, serviceName, 'combineKnowledgeBaseDepartments', [type, merge]);  // No I18N
     },
-    // setRecentShowLimit: function (value) {
-    //   exec(null, null, serviceName, 'setKnowledgeBaseRecentShowLimit', [value]); // No I18N
-    // },
+    setRecentlyViewedCount: function (limit) {
+      exec(null, null, serviceName, 'setKnowledgeBaseRecentlyViewedCount', [limit]);  // No I18N
+    },
     getResourceDepartments: function (success, error) {
       exec(success, error, serviceName, 'getKnowledgeBaseResourceDepartments', []); // No I18N
     },

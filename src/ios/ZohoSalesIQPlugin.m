@@ -72,6 +72,13 @@ NSString *RESOURCE_CLOSED = @"RESOURCE_CLOSED";
 NSString *RESOURCE_LIKED = @"RESOURCE_LIKED";
 NSString *RESOURCE_DISLIKED = @"RESOURCE_DISLIKED";
 
+NSString *LAUNCHER_VISIBILITY_MODE_ALWAYS = @"LAUNCHER_VISIBILITY_MODE_ALWAYS";
+NSString *LAUNCHER_VISIBILITY_MODE_NEVER = @"LAUNCHER_VISIBILITY_MODE_NEVER";
+NSString *LAUNCHER_VISIBILITY_MODE_WHEN_ACTIVE_CHAT = @"LAUNCHER_VISIBILITY_MODE_WHEN_ACTIVE_CHAT";
+
+NSString *HANDLE_CUSTOM_LAUNCHER_VISIBILITY = @"HANDLE_CUSTOM_LAUNCHER_VISIBILITY";
+
+
 bool handleURI = YES;
 
 
@@ -213,6 +220,26 @@ bool handleURI = YES;
         [[ZohoSalesIQ Chat] setLanguage:LanguageArmenian];
     }else if([language_code isEqualToString:@"fa"]){
         [[ZohoSalesIQ Chat] setLanguage:LanguagePersian];
+    }else if([language_code isEqualToString:@"ta"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageTamil];
+    }else if([language_code isEqualToString:@"kn"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageKannada];
+    }else if([language_code isEqualToString:@"bn"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageBengali];
+    }else if([language_code isEqualToString:@"hi"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageHindi];
+    }else if([language_code isEqualToString:@"gu"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageGujarati];
+    }else if([language_code isEqualToString:@"mr"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageMarathi];
+    }else if([language_code isEqualToString:@"te"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageTelugu];
+    }else if([language_code isEqualToString:@"pa"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguagePunjabi];
+    }else if([language_code isEqualToString:@"or"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageOriya];
+    }else if([language_code isEqualToString:@"ml"]){
+        [[ZohoSalesIQ Chat] setLanguage:LanguageMalayalam];
     }else{
         [[ZohoSalesIQ Chat] setLanguage:LanguageEnglish];
     }
@@ -895,7 +922,27 @@ bool handleURI = YES;
     }
 }
 
+- (void)dismissUI:(CDVInvokedUrlCommand*)command{
+    [ZohoSalesIQ dismissUI];
+}
+
+
 //MARK:- KNOWLEGEBASE APIs
+- (void)isKnowledgeBaseEnabled: (CDVInvokedUrlCommand*)command {
+    NSString *type = [command.arguments objectAtIndex:0];
+    if ([type isEqualToString: RESOURCE_ARTICLES]) {
+        BOOL knowledgebaseEnabled = [[ZohoSalesIQ KnowledgeBase] isEnabled: SIQResourceTypeArticles];
+        CDVPluginResult* pluginResult = nil;
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:knowledgebaseEnabled];
+        [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+    }
+}
+
+- (void)setKnowledgeBaseRecentlyViewedCount:(CDVInvokedUrlCommand*)command{
+    NSInteger limit = [[command.arguments objectAtIndex:0] integerValue];
+    [[ZohoSalesIQ KnowledgeBase] setRecentShowLimit:limit];
+}
+
 - (void)setKnowledgeBaseVisibility:(CDVInvokedUrlCommand*)command{
     NSString *type = [command.arguments objectAtIndex:0];
     BOOL enable = [[command.arguments objectAtIndex:1] boolValue];
@@ -1046,6 +1093,45 @@ bool handleURI = YES;
     }
 }
 
+//MARK:- Feedback APIs
+- (void)showChatFeedbackAfterSkip:(CDVInvokedUrlCommand*)command{
+    BOOL skip = [[command.arguments objectAtIndex:0] boolValue];
+    [[ZohoSalesIQ Chat] showFeedbackAfterSkip:skip];
+}
+
+- (void)showChatFeedbackUpTo:(CDVInvokedUrlCommand*)command{
+    NSInteger duration = [[command.arguments objectAtIndex:0] integerValue];
+    [[ZohoSalesIQ Chat] showFeedbackWithUptoDuration: duration];
+}
+
+//MARK:- Launcher APIs
+- (void)setLauncherVisibilityMode:(CDVInvokedUrlCommand*)command{
+    NSString *mode = [command.arguments objectAtIndex:0];
+    if ([mode isEqualToString: LAUNCHER_VISIBILITY_MODE_ALWAYS]) {
+        [[ZohoSalesIQ Launcher] show:VisibilityModeAlways];
+    } else if ([mode isEqualToString: LAUNCHER_VISIBILITY_MODE_NEVER]) {
+        [[ZohoSalesIQ Launcher] show:VisibilityModeNever];
+    } else if ([mode isEqualToString: LAUNCHER_VISIBILITY_MODE_WHEN_ACTIVE_CHAT]) {
+        [[ZohoSalesIQ Launcher] show:VisibilityModeWhenActiveChat];
+    }
+}
+
+- (void)setVisibilityModeToCustomLauncher:(CDVInvokedUrlCommand*)command{
+    NSString *mode = [command.arguments objectAtIndex:0];
+    if ([mode isEqualToString: LAUNCHER_VISIBILITY_MODE_ALWAYS]) {
+        [[ZohoSalesIQ Launcher] setVisibilityModeToCustomLauncher:VisibilityModeAlways];
+    } else if ([mode isEqualToString: LAUNCHER_VISIBILITY_MODE_NEVER]) {
+        [[ZohoSalesIQ Launcher] setVisibilityModeToCustomLauncher:VisibilityModeNever];
+    } else if ([mode isEqualToString: LAUNCHER_VISIBILITY_MODE_WHEN_ACTIVE_CHAT]) {
+        [[ZohoSalesIQ Launcher] setVisibilityModeToCustomLauncher:VisibilityModeWhenActiveChat];
+    }
+}
+
+- (void)enableLauncherDragToDismiss:(CDVInvokedUrlCommand*)command{
+    BOOL enable = [[command.arguments objectAtIndex:0] boolValue];
+    [[ZohoSalesIQ Launcher] enableDragToDismiss:enable];
+}
+
 
 //MARK:- INTERNAL HELPER METHODS
 
@@ -1086,9 +1172,11 @@ void mainThread(void (^block)(void)) {
         body = [[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:body options:0 error:NULL] encoding:NSUTF8StringEncoding];
     }
     NSString *script = @"";
-    if([body isKindOfClass:[NSNumber class]]){
+    if ([name isEqualToString: HANDLE_CUSTOM_LAUNCHER_VISIBILITY]) {
+        script = [NSString stringWithFormat:@"%@.sendEventToJs(`%@`, %s)", serviceName, name,[body boolValue] ? "true" : "false"];
+    } else if([body isKindOfClass:[NSNumber class]]){
         script = [NSString stringWithFormat:@"%@.sendEventToJs(`%@`, %@)", serviceName, name, body];
-    }else{
+    } else{
         if([body isKindOfClass:[NSString class]]){
             NSString *jsonString = (NSString*)body;
             jsonString = [jsonString stringByReplacingOccurrencesOfString:@"`" withString:@"\""];
@@ -1823,6 +1911,11 @@ void mainThread(void (^block)(void)) {
 - (void)handleResourceDisliked:(enum SIQResourceType)type resource:(SIQKnowledgeBaseResource * _Nullable)resource {
     NSMutableDictionary *resourceInformation = [self prepareResourceInformation:type resource:resource];
     [self sendEvent:RESOURCE_DISLIKED body: resourceInformation];
+}
+
+- (void)handleCustomLauncherVisibility:(BOOL)visible {
+    NSNumber *visibleValue = [NSNumber numberWithBool:visible];
+    [self sendEvent:HANDLE_CUSTOM_LAUNCHER_VISIBILITY body: visibleValue];
 }
 
 @end

@@ -27,7 +27,6 @@ import com.zoho.livechat.android.SIQVisitor;
 import com.zoho.livechat.android.SIQVisitorLocation;
 import com.zoho.livechat.android.SalesIQCustomAction;
 import com.zoho.livechat.android.VisitorChat;
-import com.zoho.livechat.android.ZohoLiveChat;
 import com.zoho.livechat.android.constants.ConversationType;
 import com.zoho.livechat.android.constants.SalesIQConstants;
 import com.zoho.livechat.android.exception.InvalidEmailException;
@@ -44,6 +43,7 @@ import com.zoho.livechat.android.listeners.SalesIQListener;
 import com.zoho.livechat.android.models.SalesIQArticle;
 import com.zoho.livechat.android.models.SalesIQArticleCategory;
 import com.zoho.livechat.android.modules.common.DataModule;
+import com.zoho.livechat.android.modules.common.ui.LauncherUtil;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.Resource;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.ResourceCategory;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.ResourceDepartment;
@@ -100,6 +100,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     private static final String PERFORM_CHATACTION = "PERFORM_CHATACTION";         // No I18N
     private static final String CUSTOMTRIGGER = "CUSTOMTRIGGER";         // No I18N
     private static final String BOT_TRIGGER = "BOT_TRIGGER";         // No I18N
+    private static final String HANDLE_CUSTOM_LAUNCHER_VISIBILITY = "HANDLE_CUSTOM_LAUNCHER_VISIBILITY";         // No I18N
     private static final String CHAT_QUEUE_POSITION_CHANGED =
             "CHAT_QUEUE_POSITION_CHANGED";         // No I18N
     private static final String HANDLE_URL = "HANDLE_URL";         // No I18N
@@ -114,10 +115,13 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     private static final int INVALID_FILTER_CODE = 604;
     private static final String INVALID_FILTER_TYPE = "invalid filter type";         // No I18N
 
-    private static final String LAUNCHER_HORIZONTAL_LEFT = "LAUNCHER_HORIZONTAL_LEFT";
-    private static final String LAUNCHER_HORIZONTAL_RIGHT = "LAUNCHER_HORIZONTAL_RIGHT";
-    private static final String LAUNCHER_VERTICAL_TOP = "LAUNCHER_VERTICAL_TOP";
-    private static final String LAUNCHER_VERTICAL_BOTTOM = "LAUNCHER_VERTICAL_BOTTOM";
+    private static final String LAUNCHER_HORIZONTAL_LEFT = "LAUNCHER_HORIZONTAL_LEFT";  // No I18N
+    private static final String LAUNCHER_HORIZONTAL_RIGHT = "LAUNCHER_HORIZONTAL_RIGHT";    // No I18N
+    private static final String LAUNCHER_VERTICAL_TOP = "LAUNCHER_VERTICAL_TOP";    // No I18N
+    private static final String LAUNCHER_VERTICAL_BOTTOM = "LAUNCHER_VERTICAL_BOTTOM";  // No I18N
+    private static final String LAUNCHER_VISIBILITY_MODE_ALWAYS = "LAUNCHER_VISIBILITY_MODE_ALWAYS";    // No I18N
+    private static final String LAUNCHER_VISIBILITY_MODE_NEVER = "LAUNCHER_VISIBILITY_MODE_NEVER";  // No I18N
+    private static final String LAUNCHER_VISIBILITY_MODE_WHEN_ACTIVE_CHAT = "LAUNCHER_VISIBILITY_MODE_WHEN_ACTIVE_CHAT";    // No I18N
 
     private static final String EVENT_OPEN_URL = "EVENT_OPEN_URL";  // No I18N
     private static final String EVENT_COMPLETE_CHAT_ACTION = "EVENT_COMPLETE_CHAT_ACTION";// No I18N
@@ -357,13 +361,70 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             if (action.equals("setThemeForAndroid")) {
                 this.setThemeForAndroid((String) data.get(0));
             }
+            if (action.equals("dismissUI")) {
+                this.dismissUI();
+            }
 
+            if (action.contains("Chat")) {
+                Chat.handleMethodCalls(action, data, callbackContext);
+            }
+            if (action.contains("Launcher")) {
+                Launcher.handleMethodCalls(action, data, callbackContext);
+            }
             if (action.contains("KnowledgeBase")) {
                 KnowledgeBase.handleKnowledgeBaseCalls(action, data, callbackContext);
             }
             return true;
         }
         return false;
+    }
+
+    static class Chat {
+        public static void handleMethodCalls(String action, JSONArray data, CallbackContext callbackContext) {
+            try {
+                if (action.equals("showChatFeedbackAfterSkip")) {  // No I18N
+                    ZohoSalesIQ.Chat.showFeedbackAfterSkip(LiveChatUtil.getBoolean(data.get(0)));
+                } else if (action.equals("showChatFeedbackUpTo")) {    // No I18N
+                    ZohoSalesIQ.Chat.showFeedback(LiveChatUtil.getInteger(data.get(0)));
+                }
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    static class Launcher {
+
+        private static ZohoSalesIQ.Launcher.VisibilityMode getVisibilityMode(final String mode) {
+            ZohoSalesIQ.Launcher.VisibilityMode visibilityMode = ZohoSalesIQ.Launcher.VisibilityMode.NEVER;
+            switch (mode) {
+                case LAUNCHER_VISIBILITY_MODE_ALWAYS:
+                    visibilityMode = ZohoSalesIQ.Launcher.VisibilityMode.ALWAYS;
+                    break;
+                case LAUNCHER_VISIBILITY_MODE_WHEN_ACTIVE_CHAT:
+                    visibilityMode = ZohoSalesIQ.Launcher.VisibilityMode.WHEN_ACTIVE_CHAT;
+                    break;
+            }
+            return visibilityMode;
+        }
+
+        public static void handleMethodCalls(final String action, final JSONArray data, final CallbackContext callbackContext) {
+            try {
+                switch (action) {
+                    case "setLauncherVisibilityMode":
+                        ZohoSalesIQ.Launcher.show(getVisibilityMode(LiveChatUtil.getString(data.get(0))));
+                        break;
+                    case "setVisibilityModeToCustomLauncher":
+                        ZohoSalesIQ.Launcher.setVisibilityModeToCustomLauncher(getVisibilityMode(LiveChatUtil.getString(data.get(0))));
+                        break;
+                    case "enableLauncherDragToDismiss":
+                        ZohoSalesIQ.Launcher.enableDragToDismiss(LiveChatUtil.getBoolean(data.get(0)));
+                        break;
+                }
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private void init(final String appKey, final String accessKey,
@@ -581,7 +642,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                     if (ZohoSalesIQ.getApplicationManager().getCurrentActivity() == null) {
                         ZohoSalesIQ.getApplicationManager().setCurrentActivity(activity);
                     }
-                    ZohoSalesIQ.getApplicationManager().refreshChatBubble();
+                    LauncherUtil.refreshLauncher();
                 }
             }
         });
@@ -864,7 +925,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             public void run() {
-                ZohoLiveChat.Chat.getDepartments(new DepartmentListener() {
+                ZohoSalesIQ.Chat.getDepartments(new DepartmentListener() {
                     @Override
                     public void onSuccess(ArrayList<SIQDepartment> departmentsList) {
                         if (departmentsList != null) {
@@ -926,7 +987,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
     private void getArticlesWithCategoryID(final String categoryId,
                                            final CallbackContext articlesCallback) {
-        ZohoSalesIQ.KnowledgeBase.getResources(ZohoSalesIQ.ResourceType.Articles, null, categoryId, null, new ResourcesListener() {
+        ZohoSalesIQ.KnowledgeBase.getResources(ZohoSalesIQ.ResourceType.Articles, null, categoryId, null, false, new ResourcesListener() {
                     @Override
                     public void onSuccess(@NonNull List<Resource> resources, boolean b) {
                         ArrayList<HashMap> array = new ArrayList<>();
@@ -1164,12 +1225,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                         ZohoSalesIQ.Notification.enablePush(fcmtoken, istestdevice);
                     }
                     if (activity != null && ZohoSalesIQ.getApplicationManager() != null) {
-                        Handler handler = new Handler(Looper.getMainLooper());
-                        handler.post(new Runnable() {
-                            public void run() {
-                                ZohoSalesIQ.getApplicationManager().refreshChatBubble();
-                            }
-                        });
+                        LauncherUtil.refreshLauncher();
                     }
                     if (callbackContext != null) {
                         callbackContext.success();
@@ -1193,9 +1249,22 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     }
 
     void eventEmitter(String event, Object value) {
-        String pluginName = "ZohoSalesIQ";         // No I18N
-        cordova.getActivity().runOnUiThread(() -> webView.loadUrl("javascript:" + pluginName +
-                ".sendEventToJs('" + event + "', " + (value != null ? JSONObject.quote(value.toString()) : null) + ");"));         // No I18N
+        try {
+            Object result = null;
+            if (value != null) {
+                if (value instanceof Boolean) {
+                    result = (boolean) value;
+                } else {
+                    result = JSONObject.quote(value.toString());
+                }
+            }
+            String pluginName = "ZohoSalesIQ";         // No I18N
+            Object finalResult = result;
+            cordova.getActivity().runOnUiThread(() -> webView.loadUrl("javascript:" + pluginName +
+                    ".sendEventToJs('" + event + "', " + finalResult + ");"));         // No I18N
+        } catch (Exception ignore) {
+
+        }
     }
 
     private Boolean isValidFilterName(String filterName) {
@@ -1558,6 +1627,12 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         }
 
         @Override
+        public void handleCustomLauncherVisibility(boolean visible) {
+            SalesIQListener.super.handleCustomLauncherVisibility(visible);
+            eventEmitter(HANDLE_CUSTOM_LAUNCHER_VISIBILITY, visible);
+        }
+
+        @Override
         public void handleChatOpened(VisitorChat visitorChat) {
             HashMap visitorMap = getChatMapObject(visitorChat);
             Gson gson = new Gson();
@@ -1702,13 +1777,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     }
 
     public void refreshLauncher() {
-        HANDLER.post(() -> {
-            SalesIQApplicationManager salesIQApplicationManager =
-                    ZohoSalesIQ.getApplicationManager();
-            if (salesIQApplicationManager != null && salesIQApplicationManager.canShowBubble(salesIQApplicationManager.getCurrentActivity())) {
-                salesIQApplicationManager.showChatBubble(salesIQApplicationManager.getCurrentActivity());
-            }
-        });
+        LauncherUtil.refreshLauncher();
     }
 
     public void sendEvent(final String event, final JSONArray objects) {
@@ -1823,6 +1892,14 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         }
     }
 
+    void dismissUI() {
+        ZohoSalesIQ.dismissUI();
+    }
+
+    void showFeedbackAfterSkip(final boolean enable) {
+        ZohoSalesIQ.Chat.showFeedbackAfterSkip(enable);
+    }
+
     void setLoggerEnabled(final boolean value) {
         ZohoSalesIQ.Logger.setEnabled(value);
     }
@@ -1844,6 +1921,15 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             }
             return resourceType;
         }
+
+        static void isKnowledgeBaseEnabled(final String type, final CallbackContext callbackContext) {
+            executeIfResourceTypeIsValid(type, callbackContext, () -> callbackContext.success(LiveChatUtil.getString(ZohoSalesIQ.KnowledgeBase.isEnabled(getResourceType(type)))));
+        }
+
+        static void setKnowledgeBaseRecentlyViewedCount(final int limit) {
+            ZohoSalesIQ.KnowledgeBase.setRecentlyViewedCount(limit);
+        }
+
 
         static void setVisibility(final String type, final boolean shouldShow) {
             executeIfResourceTypeIsValid(type, null, () -> ZohoSalesIQ.KnowledgeBase.setVisibility(getResourceType(type), shouldShow));
@@ -1903,8 +1989,8 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             }));
         }
 
-        static void getResources(final String type, final String departmentID, final String parentCategoryID, final int page, final int limit, final String searchKey, final CallbackContext callbackContext) {
-            executeIfResourceTypeIsValid(type, callbackContext, () -> ZohoSalesIQ.KnowledgeBase.getResources(getResourceType(type), departmentID, parentCategoryID, searchKey, page, limit, new ResourcesListener() {
+        static void getResources(final String type, final String departmentID, final String parentCategoryID, final int page, final int limit, final String searchKey, final boolean includeChildCategoryResources, final CallbackContext callbackContext) {
+            executeIfResourceTypeIsValid(type, callbackContext, () -> ZohoSalesIQ.KnowledgeBase.getResources(getResourceType(type), departmentID, parentCategoryID, searchKey, page, limit, includeChildCategoryResources, new ResourcesListener() {
                 @Override
                 public void onSuccess(@NonNull List<Resource> resources, boolean moreDataAvailable) {
                     JSONObject successJson = new JSONObject();
@@ -1951,9 +2037,14 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             try {
                 if (action.equals("getKnowledgeBaseResourceDepartments")) {
                     KnowledgeBase.getResourceDepartments(callbackContext);
+                } else if (action.equals("setKnowledgeBaseRecentlyViewedCount")) {
+                    KnowledgeBase.setKnowledgeBaseRecentlyViewedCount(LiveChatUtil.getInteger(data.get(0)));
                 } else {
                     String type = data.get(0).toString();
                     switch (action) {
+                        case "isKnowledgeBaseEnabled":
+                            KnowledgeBase.isKnowledgeBaseEnabled(type, callbackContext);
+                            break;
                         case "setKnowledgeBaseVisibility":
                             KnowledgeBase.setVisibility(type, LiveChatUtil.getBoolean(data.get(1)));
                             break;
@@ -1970,7 +2061,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                             KnowledgeBase.getSingleResource(type, LiveChatUtil.getString(data.get(1)), callbackContext);
                             break;
                         case "getKnowledgeBaseResources":
-                            KnowledgeBase.getResources(type, getStringOrNull(data.get(1)), getStringOrNull(data.get(2)), LiveChatUtil.getInteger(data.get(3)), LiveChatUtil.getInteger(data.get(4)), getStringOrNull(data.get(5)), callbackContext);
+                            KnowledgeBase.getResources(type, getStringOrNull(data.get(1)), getStringOrNull(data.get(2)), LiveChatUtil.getInteger(data.get(3)), LiveChatUtil.getInteger(data.get(4)), getStringOrNull(data.get(5)), false, callbackContext);
                             break;
                         case "getKnowledgeBaseCategories":
                             KnowledgeBase.getCategories(type, getStringOrNull(data.get(1)), getStringOrNull(data.get(2)), callbackContext);
