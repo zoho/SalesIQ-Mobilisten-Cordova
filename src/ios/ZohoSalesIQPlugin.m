@@ -78,10 +78,6 @@ NSString *LAUNCHER_VISIBILITY_MODE_WHEN_ACTIVE_CHAT = @"LAUNCHER_VISIBILITY_MODE
 
 NSString *HANDLE_CUSTOM_LAUNCHER_VISIBILITY = @"HANDLE_CUSTOM_LAUNCHER_VISIBILITY";
 
-NSString *ACTION_SOURCE_APP = @"ACTION_SOURCE_APP";
-NSString *ACTION_SOURCE_SDK = @"ACTION_SOURCE_SDK";
-NSString *NOTIFICATION_CLICKED = @"NOTIFICATION_CLICKED";
-
 
 bool handleURI = YES;
 
@@ -97,17 +93,16 @@ bool handleURI = YES;
     NSString* appKey = [command.arguments objectAtIndex:0];
     NSString* accessKey = [command.arguments objectAtIndex:1];
     [ZohoSalesIQ setPlatformWithPlatform:@"Cordova"];
-    [ZohoSalesIQ initWithAppKey:appKey accessKey:accessKey authProvider:NULL completion:^(id<SIQError> _Nullable error) {
+    [ZohoSalesIQ initWithAppKey:appKey accessKey:accessKey completion:^(BOOL success) {
         CDVPluginResult* pluginResult = nil;
-        if (error == nil) {
+        if(success == true){
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:YES];
             [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
-        } else {
+        }else{
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsBool:NO];
             [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
         }
     }];
-    
     if(actionDictionary == nil){
         actionDictionary = [[NSMutableDictionary<NSString *, SIQActionHandler *> alloc] init];
     }
@@ -931,67 +926,6 @@ bool handleURI = YES;
     [ZohoSalesIQ dismissUI];
 }
 
-- (void)hideQueueTime:(CDVInvokedUrlCommand*)command {
-    BOOL hide = [[command.arguments objectAtIndex:0] boolValue];
-    [[ZohoSalesIQ Chat] hideQueueTime:hide];
-}
-
-
-- (void)registerLocalizationFile:(CDVInvokedUrlCommand*)command {
-    NSString *fileName = [command.arguments objectAtIndex:0];
-    if(fileName != nil){
-        [ZohoSalesIQ registerLocalizationFileWith:fileName];
-    }
-}
-
-- (void)setNotificationActionSource:(CDVInvokedUrlCommand*)command {
-    NSString *action = [command.arguments objectAtIndex:0];
-    if([action isEqual: ACTION_SOURCE_APP]){
-        [[ZohoSalesIQ Notification] setActionWith: ActionSourceApp];
-    }else if ([action  isEqual: ACTION_SOURCE_SDK]){
-        [[ZohoSalesIQ Notification] setActionWith: ActionSourceSdk];
-    }
-}
-
-- (void)isSDKMessage:(CDVInvokedUrlCommand*)command {
-    NSDictionary *payload = [command.arguments objectAtIndex:0];
-    CDVPluginResult* pluginResult = nil;
-    if ([ZohoSalesIQ isMobilistenNotification: payload]) {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:YES];
-        [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
-    } else {
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:NO];
-        [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
-    }
-}
-
-- (void)getNotificationPayload:(CDVInvokedUrlCommand*)command {
-    NSDictionary *payload = [command.arguments objectAtIndex:0];
-    [[ZohoSalesIQ Notification] getPayload:payload completion:^(SalesIQNotificationPayload * _Nullable completionObject) {
-        NSMutableDictionary *resultMap = [NSMutableDictionary dictionary];
-        CDVPluginResult* pluginResult = nil;
-        if (completionObject != nil) {
-            if ([completionObject isKindOfClass:[SalesIQChatNotificationPayload class]]) {
-                SalesIQChatNotificationPayload *chatPayload = (SalesIQChatNotificationPayload *)completionObject;
-                resultMap[@"type"] = @"chat";
-                resultMap[@"payload"] = [chatPayload toDictionary];
-            } else if ([completionObject isKindOfClass:[SalesIQEndChatNotificationPayload class]]) {
-                SalesIQEndChatNotificationPayload *endChatPayload = (SalesIQEndChatNotificationPayload *)completionObject;
-                resultMap[@"type"] = @"endChatDetails";
-                resultMap[@"payload"] = [endChatPayload toDictionary];
-            } else if ([completionObject isKindOfClass:[SalesIQVisitorHistoryNotificationPayload class]]) {
-                SalesIQVisitorHistoryNotificationPayload *visitorHistoryPayload = (SalesIQVisitorHistoryNotificationPayload *)completionObject;
-                resultMap[@"type"] = @"visitorHistory";
-                resultMap[@"payload"] = [visitorHistoryPayload toDictionary];
-            }
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:resultMap];
-            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
-        } else {
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:resultMap];
-            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
-        }
-    }];
-}
 
 //MARK:- KNOWLEGEBASE APIs
 - (void)isKnowledgeBaseEnabled: (CDVInvokedUrlCommand*)command {
@@ -1168,13 +1102,6 @@ bool handleURI = YES;
 - (void)showChatFeedbackUpTo:(CDVInvokedUrlCommand*)command{
     NSInteger duration = [[command.arguments objectAtIndex:0] integerValue];
     [[ZohoSalesIQ Chat] showFeedbackWithUptoDuration: duration];
-}
-
-- (void)isChatEnabled:(CDVInvokedUrlCommand*)command{
-    BOOL chatEnabled = [[ZohoSalesIQ Chat] isEnabled];
-    CDVPluginResult* pluginResult = nil;
-    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:chatEnabled];
-    [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
 //MARK:- Launcher APIs
@@ -1989,30 +1916,6 @@ void mainThread(void (^block)(void)) {
 - (void)handleCustomLauncherVisibility:(BOOL)visible {
     NSNumber *visibleValue = [NSNumber numberWithBool:visible];
     [self sendEvent:HANDLE_CUSTOM_LAUNCHER_VISIBILITY body: visibleValue];
-}
-
-- (void)handleNotificationActionWithPayload:(NSDictionary<NSString *,id> *)payload {
-    [[ZohoSalesIQ Notification] getPayload: payload  completion:^(SalesIQNotificationPayload * _Nullable completionObject) {
-        NSMutableDictionary *resultMap = [NSMutableDictionary dictionary];
-        if (completionObject != nil) {
-            if ([completionObject isKindOfClass:[SalesIQChatNotificationPayload class]]) {
-                SalesIQChatNotificationPayload *chatPayload = (SalesIQChatNotificationPayload *)completionObject;
-                resultMap[@"type"] = @"chat";
-                resultMap[@"payload"] = [chatPayload toDictionary];
-            } else if ([completionObject isKindOfClass:[SalesIQEndChatNotificationPayload class]]) {
-                SalesIQEndChatNotificationPayload *endChatPayload = (SalesIQEndChatNotificationPayload *)completionObject;
-                resultMap[@"type"] = @"endChatDetails";
-                resultMap[@"payload"] = [endChatPayload toDictionary];
-            } else if ([completionObject isKindOfClass:[SalesIQVisitorHistoryNotificationPayload class]]) {
-                SalesIQVisitorHistoryNotificationPayload *visitorHistoryPayload = (SalesIQVisitorHistoryNotificationPayload *)completionObject;
-                resultMap[@"type"] = @"visitorHistory";
-                resultMap[@"payload"] = [visitorHistoryPayload toDictionary];
-            }
-        } else {
-            NSLog(@"Completion object is nil");
-        }
-        [self sendEvent:NOTIFICATION_CLICKED body: resultMap];
-    }];
 }
 
 @end

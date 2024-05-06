@@ -31,17 +31,12 @@ exports.EVENT = {
     RESOURCE_LIKED: "RESOURCE_LIKED",   // No I18N
     RESOURCE_DISLIKED: "RESOURCE_DISLIKED", // No I18N
     HANDLE_CUSTOM_LAUNCHER_VISIBILITY: "HANDLE_CUSTOM_LAUNCHER_VISIBILITY",// No I18N
-    NOTIFICATION_CLICKED: "NOTIFICATION_CLICKED",// No I18N
 };
 
 exports.Resource = {
     ARTICLES: "RESOURCE_ARTICLES"   // No I18N
 }
 
-exports.ActionSource = {
-    APP: "ACTION_SOURCE_APP",// No I18N
-    SDK: "ACTION_SOURCE_SDK",// No I18N
-};
 
 exports.Launcher = {
     STATIC_MODE: 1,
@@ -69,18 +64,18 @@ exports.Launcher = {
     enableDragToDismiss: function (enable) {
         exec(null, null, serviceName, 'enableLauncherDragToDismiss', [enable]);         // No I18N
     }
-};
+}
 
 exports.Event = {
     OPEN_URL: "EVENT_OPEN_URL",
     COMPLETE_CHAT_ACTION: "EVENT_COMPLETE_CHAT_ACTION"
-};
+}
 
 exports.Tab = {
     CONVERSATIONS: "TAB_CONVERSATIONS",
     KNOWLEDGE_BASE: 'TAB_KNOWLEDGE_BASE',   //No I18N
     FAQ: 'TAB_FAQ'  //No I18N
-};
+}
 
 //Chat Types
 exports.CHATTYPE = {
@@ -281,10 +276,6 @@ exports.enableInAppNotification = function (success, error) {
 exports.disableInAppNotification = function (success, error) {
     exec(success, error, serviceName, 'disableInAppNotification', []);         // No I18N
 };
-    
-exports.registerLocalizationFileForiOS = function (name, success, error) {
-    exec(success, error, serviceName, 'registerLocalizationFile', [name]);         // No I18N
-};
 
 //CONVERSATIONN APIS
 exports.setConversationListTitle = function (title, success, error) {
@@ -374,19 +365,19 @@ exports.sendEventToJs = function (name, body) {
 
 exports.sendEvent = function (name, ...values) {
     exec(null, null, serviceName, 'sendEvent', [name, values]);         // No I18N
-};
+}
 
 exports.setLauncherPropertiesForAndroid = function (launcherPropertiesMap) {
     exec(null, null, serviceName, 'setLauncherPropertiesForAndroid', [launcherPropertiesMap]);         // No I18N
-};
+}
 
 exports.printDebugLogsForAndroid = function (value) {
     exec(null, null, serviceName, 'printDebugLogsForAndroid', [value]);         // No I18N
-};
+}
 
 exports.dismissUI = function () {
     exec(null, null, serviceName, 'dismissUI', []);         // No I18N
-};
+},
 
 exports.Chat = {
     shouldOpenUrl: function (value) {
@@ -397,40 +388,22 @@ exports.Chat = {
     },
     showFeedback(upToDuration) {
         exec(null, null, serviceName, 'showChatFeedbackUpTo', [upToDuration]);         // No I18N
-    },
-    hideQueueTime(hide) {
-        exec(null, null, serviceName, 'hideQueueTime', [hide]);
-    },
-    isChatEnabled: function (success) {
-        exec(success, null, serviceName, 'isChatEnabled', []); // No I18N
     }
-};
+}
 
 exports.setTabOrder = function (...tabNames) {
     exec(null, null, serviceName, 'setTabOrder', [tabNames]);         // No I18N
-};
+}
 
 exports.setThemeForAndroid = function (name) {
     exec(null, null, serviceName, 'setThemeForAndroid', [name]);         // No I18N
-};
+}
 
 
 exports.Notification = {
     setIconForAndroid: function (resourceName) {
         exec(null, null, serviceName, 'setNotificationIconForAndroid', [resourceName]);         // No I18N
-    },
-    setActionSource: function (actionSource) {
-        exec(null, null, serviceName, 'setNotificationActionSource', [actionSource]);
-    },
-    isSDKMessage: function (payload, success, error) {
-        exec(success, error, serviceName, 'isSDKMessage', [payload]);  // No I18N
-    },
-    registerPush: function (token, isTestDevice) {
-        exec(null, null,serviceName, 'registerPush', [token, isTestDevice]);  // No I18N
-    },
-    getPayload: function (payload, success, error) {
-        exec(success, error, serviceName, 'getNotificationPayload', [payload]);  // No I18N
-    },
+    }
 }
 
 exports.Logger = {
@@ -454,7 +427,7 @@ exports.Logger = {
     writeLogForiOS: function (log, level, success, error) {
         exec(success, error, serviceName, 'writeLogForiOS', [log, level]);         // No I18N
     }
-};
+}
 
 exports.KnowledgeBase = {
     isEnabled: function (type, success, error) {
@@ -487,7 +460,7 @@ exports.KnowledgeBase = {
     getCategories: function (type, departmentId = null, parentCategoryId = null, success, error) {
       exec(success, error, serviceName, 'getKnowledgeBaseCategories',[type, departmentId, parentCategoryId]); // No I18N
     }
-};
+}
 
 function setPlatform(platform) {
     exec(null, null, serviceName, 'setPlatform', [platform]);

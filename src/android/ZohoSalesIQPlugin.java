@@ -386,22 +386,9 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                     ZohoSalesIQ.Chat.showFeedbackAfterSkip(LiveChatUtil.getBoolean(data.get(0)));
                 } else if (action.equals("showChatFeedbackUpTo")) {    // No I18N
                     ZohoSalesIQ.Chat.showFeedback(LiveChatUtil.getInteger(data.get(0)));
-                } else if (action.contains("isChatEnabled")) {
-                    Chat.isChatEnabled(callbackContext);
                 }
             } catch (JSONException e) {
                 throw new RuntimeException(e);
-            }
-        }
-
-        private static void isChatEnabled(CallbackContext callbackContext) {
-            Boolean status = ZohoSalesIQ.isSDKEnabled();
-            if (callbackContext != null) {
-                if (status) {
-                    callbackContext.success(1);
-                } else {
-                    callbackContext.success(0);
-                }
             }
         }
     }
