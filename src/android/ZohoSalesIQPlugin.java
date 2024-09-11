@@ -44,6 +44,7 @@ import com.zoho.livechat.android.models.SalesIQArticle;
 import com.zoho.livechat.android.models.SalesIQArticleCategory;
 import com.zoho.livechat.android.modules.common.DataModule;
 import com.zoho.livechat.android.modules.common.ui.LauncherUtil;
+import com.zoho.livechat.android.modules.common.ui.result.entities.SalesIQError;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.Resource;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.ResourceCategory;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.ResourceDepartment;
@@ -154,6 +155,9 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
         if (action != null) {
             if (action.equalsIgnoreCase("init")) {
                 this.init(data.get(0).toString(), data.get(1).toString(), callbackContext);
+            }
+            if (action.equalsIgnoreCase("present")) {
+                this.present(getStringOrNull(data.get(0)), getStringOrNull(data.get(1)), callbackContext);
             }
             if (action.equals("enableScreenshotOption")) {
                 this.enableScreenshotOption();
@@ -388,6 +392,47 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                     ZohoSalesIQ.Chat.showFeedback(LiveChatUtil.getInteger(data.get(0)));
                 } else if (action.contains("isChatEnabled")) {
                     Chat.isChatEnabled(callbackContext);
+                } else if (action.equals("setChatWaitingTime")) {
+                    ZohoSalesIQ.Chat.setWaitingTime(LiveChatUtil.getInteger(data.get(0)));
+                } else if (action.equals("startNewChat")) {
+                    ZohoSalesIQ.Chat.start(LiveChatUtil.getString(data.get(0)), getStringOrNull(data.get(1)), getStringOrNull(data.get(2)), chatResult -> {
+                        if (chatResult.isSuccess()) {
+                            callbackContext.success(getAsJSONObject(chatResult.getData()));
+                        } else {
+                            SalesIQError error = chatResult.getError();
+                            if (error != null) {
+                                callbackContext.error(getErrorJson(error.getCode(), error.getMessage()));
+                            } else {
+                                callbackContext.error("Unknown error occurred while starting a new chat.");    //No I18N
+                            }
+                        }
+                    });
+                } else if (action.equals("startNewChatWithTrigger")) {
+                    ZohoSalesIQ.Chat.startWithTrigger(getStringOrNull(data.get(0)), getStringOrNull(data.get(1)), chatResult -> {
+                        if (chatResult.isSuccess()) {
+                            callbackContext.success(getAsJSONObject(chatResult.getData()));
+                        } else {
+                            SalesIQError error = chatResult.getError();
+                            if (error != null) {
+                                callbackContext.error(getErrorJson(error.getCode(), error.getMessage()));
+                            } else {
+                                callbackContext.error("Unknown error occurred while starting a new chat with trigger.");    //No I18N
+                            }
+                        }
+                    });
+                } else if (action.equals("getChat")) {
+                    ZohoSalesIQ.Chat.get(LiveChatUtil.getString(data.get(0)), chatResult -> {
+                        if (chatResult.isSuccess()) {
+                            callbackContext.success(getAsJSONObject(chatResult.getData()));
+                        } else {
+                            SalesIQError error = chatResult.getError();
+                            if (error != null) {
+                                callbackContext.error(getErrorJson(error.getCode(), error.getMessage()));
+                            } else {
+                                callbackContext.error("Unknown error occurred while getting the chat.");    //No I18N
+                            }
+                        }
+                    });
                 }
             } catch (JSONException e) {
                 throw new RuntimeException(e);
@@ -433,6 +478,9 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                     case "enableLauncherDragToDismiss":
                         ZohoSalesIQ.Launcher.enableDragToDismiss(LiveChatUtil.getBoolean(data.get(0)));
                         break;
+                    case "setLauncherMinimumPressDuration":
+                        ZohoSalesIQ.Launcher.setMinimumPressDuration(LiveChatUtil.getInteger(data.get(0)));
+                        break;
                 }
             } catch (JSONException e) {
                 throw new RuntimeException(e);
@@ -453,6 +501,31 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                 ZohoSalesIQ.ChatActions.setListener(new ZohoSalesIQPluginListener());
             }
         });
+    }
+
+    private static void present(@Nullable final String tab, @Nullable final String id, final CallbackContext callbackContext) {
+        ZohoSalesIQ.present(getTab(tab), id, presentResult -> {
+            if (presentResult.isSuccess()) {
+                callbackContext.success(1);
+            } else {
+                SalesIQError error = presentResult.getError();
+                if (error != null) {
+                    callbackContext.error(getErrorJson(error.getCode(), error.getMessage()));
+                } else {
+                    callbackContext.error("Unknown error occurred while presenting the tab.");    //No I18N
+                }
+            }
+        });
+    }
+
+    private static @Nullable ZohoSalesIQ.Tab getTab(@Nullable String tab) {
+        ZohoSalesIQ.Tab tabType = null;
+        if (Tab.CONVERSATIONS.name.equals(tab)) {
+            tabType = ZohoSalesIQ.Tab.Conversations;
+        } else if (Tab.KNOWLEDGE_BASE.name.equals(tab) || Tab.FAQ.name.equals(tab)) {
+            tabType = ZohoSalesIQ.Tab.KnowledgeBase;
+        }
+        return tabType;
     }
 
     private void enableScreenshotOption() {
@@ -2177,6 +2250,16 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             errorMap.put("message", message);         // No I18N
         } catch (JSONException ignored) {}
         return errorMap;
+    }
+
+    private static @Nullable String getStringOrNull(Object object) {
+        String value;
+        if (object == null || object == JSONObject.NULL) {
+            value = null;
+        } else {
+            value = (String) object;
+        }
+        return value;
     }
 
     // void clearLogsForiOS() {}

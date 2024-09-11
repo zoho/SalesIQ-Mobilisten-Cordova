@@ -31,7 +31,7 @@ exports.EVENT = {
     RESOURCE_LIKED: "RESOURCE_LIKED",   // No I18N
     RESOURCE_DISLIKED: "RESOURCE_DISLIKED", // No I18N
     HANDLE_CUSTOM_LAUNCHER_VISIBILITY: "HANDLE_CUSTOM_LAUNCHER_VISIBILITY",// No I18N
-    NOTIFICATION_CLICKED: "NOTIFICATION_CLICKED",// No I18N
+    NOTIFICATION_CLICKED: "NOTIFICATION_CLICKED"// No I18N
 };
 
 exports.Resource = {
@@ -68,6 +68,12 @@ exports.Launcher = {
     },
     enableDragToDismiss: function (enable) {
         exec(null, null, serviceName, 'enableLauncherDragToDismiss', [enable]);         // No I18N
+    },
+    setMinimumPressDuration: function (duration) {
+        exec(null, null, serviceName, 'setLauncherMinimumPressDuration', [duration]);         // No I18N
+    },
+    refresh: function () {
+        exec(null, null, serviceName, 'refreshLauncher', []);         // No I18N
     }
 };
 
@@ -92,10 +98,13 @@ exports.CHATTYPE = {
     MISSED: "MISSED"    // No I18N
 };
 
-// API Methods
 exports.init = function (appKey, accessKey, success, error) {
     exec(success, error, serviceName, 'init', [appKey, accessKey]);         // No I18N
     setPlatform(getPluginPlatform());
+};
+
+exports.present = function (tab = null, id = null, success, error) {
+    exec(success, error, serviceName, 'present', [tab, id]);         // No I18N
 };
 
 exports.enableScreenshotOption = function (success, error) {
@@ -152,6 +161,10 @@ exports.showLauncher = function (visible, success, error) {
 
 exports.setThemeColorforiOS = function (colorCodeHex, success, error) {
     exec(success, error, serviceName, 'setThemeColorforiOS', [colorCodeHex]);         // No I18N
+};
+
+exports.setThemeForiOS = function (colors, success, error) {
+    exec(success, error, serviceName, 'setThemeForiOS', [colors]);         // No I18N
 };
 
 exports.endChat = function (chatID, success, error) {
@@ -248,6 +261,7 @@ exports.setQuestion = function (question, success, error) {
     exec(success, error, serviceName, 'setQuestion', [question]);         // No I18N
 };
 
+// Deprecated
 exports.startChat = function (question, success, error) {
     exec(success, error, serviceName, 'startChat', [question]);         // No I18N
 };
@@ -281,9 +295,9 @@ exports.enableInAppNotification = function (success, error) {
 exports.disableInAppNotification = function (success, error) {
     exec(success, error, serviceName, 'disableInAppNotification', []);         // No I18N
 };
-    
-exports.registerLocalizationFileForiOS = function (name, success, error) {
-    exec(success, error, serviceName, 'registerLocalizationFile', [name]);         // No I18N
+
+exports.registerLocalizationFileForiOS = function (name) {
+    exec(null, null, serviceName, 'registerLocalizationFile', [name]);         // No I18N
 };
 
 //CONVERSATIONN APIS
@@ -403,6 +417,21 @@ exports.Chat = {
     },
     isChatEnabled: function (success) {
         exec(success, null, serviceName, 'isChatEnabled', []); // No I18N
+    },
+    open: function (map) {
+        exec(null, null, serviceName, 'openChat', [map]);         // No I18N
+    },
+    start: function (question, customChatId = null, departmentName = null, success, error) {
+        exec(success, error, serviceName, 'startNewChat', [question, customChatId, departmentName]);         // No I18N
+    },
+    startWithTrigger: function (customChatId = null, departmentName = null, success, error) {
+        exec(success, error, serviceName, 'startNewChatWithTrigger', [customChatId, departmentName]);         // No I18N
+    },
+    setWaitingTime: function (seconds) {
+        exec(null, null, serviceName, 'setChatWaitingTime', [seconds]);         // No I18N
+    },
+    get: function (chatId, success, error) {
+        exec(success, error, serviceName, 'getChat', [chatId]);         // No I18N
     }
 };
 
@@ -426,7 +455,7 @@ exports.Notification = {
         exec(success, error, serviceName, 'isSDKMessage', [payload]);  // No I18N
     },
     registerPush: function (token, isTestDevice) {
-        exec(null, null,serviceName, 'registerPush', [token, isTestDevice]);  // No I18N
+        exec(null, null, serviceName, 'registerPush', [token, isTestDevice]);  // No I18N
     },
     getPayload: function (payload, success, error) {
         exec(success, error, serviceName, 'getNotificationPayload', [payload]);  // No I18N
@@ -458,34 +487,34 @@ exports.Logger = {
 
 exports.KnowledgeBase = {
     isEnabled: function (type, success, error) {
-      exec(success, error, serviceName, 'isKnowledgeBaseEnabled', [type]);  // No I18N
+        exec(success, error, serviceName, 'isKnowledgeBaseEnabled', [type]);  // No I18N
     },
     setVisibility: function (type, shouldShow) {
-      exec(null, null, serviceName, 'setKnowledgeBaseVisibility', [type, shouldShow]);  // No I18N
+        exec(null, null, serviceName, 'setKnowledgeBaseVisibility', [type, shouldShow]);  // No I18N
     },
     categorize: function (type, shouldCategorize) {
-      exec(null, null, serviceName, 'categorizeKnowledgeBase',[type, shouldCategorize]);    // No I18N
+        exec(null, null, serviceName, 'categorizeKnowledgeBase', [type, shouldCategorize]);    // No I18N
     },
     combineDepartments: function (type, merge) {
-      exec(null, null, serviceName, 'combineKnowledgeBaseDepartments', [type, merge]);  // No I18N
+        exec(null, null, serviceName, 'combineKnowledgeBaseDepartments', [type, merge]);  // No I18N
     },
     setRecentlyViewedCount: function (limit) {
-      exec(null, null, serviceName, 'setKnowledgeBaseRecentlyViewedCount', [limit]);  // No I18N
+        exec(null, null, serviceName, 'setKnowledgeBaseRecentlyViewedCount', [limit]);  // No I18N
     },
     getResourceDepartments: function (success, error) {
-      exec(success, error, serviceName, 'getKnowledgeBaseResourceDepartments', []); // No I18N
+        exec(success, error, serviceName, 'getKnowledgeBaseResourceDepartments', []); // No I18N
     },
     open: function (type, id, success, error) {
-      exec(success, error, serviceName, 'openKnowledgeBase', [type, id]); // No I18N
+        exec(success, error, serviceName, 'openKnowledgeBase', [type, id]); // No I18N
     },
     getSingleResource: function (type, id, success, error) {
-      exec(success, error, serviceName, 'getKnowledgeBaseSingleResource', [type, id]);    // No I18N
+        exec(success, error, serviceName, 'getKnowledgeBaseSingleResource', [type, id]);    // No I18N
     },
     getResources: function (type, departmentId = null, parentCategoryId = null, page = 1, limit = 99, searchKey = null, success, error) {
-      exec(success, error, serviceName, 'getKnowledgeBaseResources',[type, departmentId, parentCategoryId, page, limit, searchKey]);  // No I18N
+        exec(success, error, serviceName, 'getKnowledgeBaseResources', [type, departmentId, parentCategoryId, page, limit, searchKey]);  // No I18N
     },
     getCategories: function (type, departmentId = null, parentCategoryId = null, success, error) {
-      exec(success, error, serviceName, 'getKnowledgeBaseCategories',[type, departmentId, parentCategoryId]); // No I18N
+        exec(success, error, serviceName, 'getKnowledgeBaseCategories', [type, departmentId, parentCategoryId]); // No I18N
     }
 };
 
@@ -520,6 +549,6 @@ function parseResult(input) {
     }
 };
 
-window.addEventListener('orientationchange', function() {
+window.addEventListener('orientationchange', function () {
     exec(null, null, serviceName, 'refreshLauncher', []);   // No I18N
 });

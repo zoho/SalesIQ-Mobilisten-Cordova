@@ -81,6 +81,9 @@ NSString *HANDLE_CUSTOM_LAUNCHER_VISIBILITY = @"HANDLE_CUSTOM_LAUNCHER_VISIBILIT
 NSString *ACTION_SOURCE_APP = @"ACTION_SOURCE_APP";
 NSString *ACTION_SOURCE_SDK = @"ACTION_SOURCE_SDK";
 NSString *NOTIFICATION_CLICKED = @"NOTIFICATION_CLICKED";
+NSString *PAYLOAD_CHAT = @"chat";
+NSString *PAYLOAD_END_CHAT = @"endChatDetails";
+NSString *PAYLOAD_VISITOR_HISTORY = @"visitorHistory";
 
 
 bool handleURI = YES;
@@ -304,6 +307,12 @@ bool handleURI = YES;
             [[ZohoSalesIQ Chat] setThemeColor: themeColor];
         }
     }
+}
+
+- (void)setThemeForiOS:(CDVInvokedUrlCommand*)command {
+    NSDictionary *colors = [command.arguments objectAtIndex:0];
+    SIQTheme *theme = [[SIQTheme alloc] initWithColors:colors];
+    [[ZohoSalesIQ Theme] setThemeWithTheme:theme];
 }
 
 - (void)setThemeColorforAndroid:(CDVInvokedUrlCommand*)command{
@@ -778,6 +787,150 @@ bool handleURI = YES;
     }
 }
 
+- (void)present:(CDVInvokedUrlCommand*)command {
+    NSString *tab = nil;
+    NSString *referenceId = nil;
+    
+    if (command.arguments.count > 0) {
+        id arg = [command.arguments objectAtIndex:0];
+        if (arg != [NSNull null]) {
+            tab = (NSString *)arg;
+        }
+    }
+    
+    if (command.arguments.count > 1) {
+        id arg = [command.arguments objectAtIndex:1];
+        if (arg != [NSNull null]) {
+            referenceId = (NSString *)arg;
+        }
+    }
+    
+    NSNumber *tabNumber = nil;
+    if (tab) {
+        if ([tab isEqual:CONVERSATIONS]) {
+            tabNumber = [NSNumber numberWithInteger:0];
+        } else if ([tab isEqual:FAQ] || [tab isEqual:KNOWLEDGEBASE]) {
+            tabNumber = [NSNumber numberWithInteger:1];
+        }
+    }
+    
+    
+    [ZohoSalesIQ presentWithTabBarItem:tabNumber referenceID:referenceId shouldShowListView:YES completion:^(id<SIQError> _Nullable error, BOOL success) {
+        CDVPluginResult* pluginResult = nil;
+        if (error != nil) {
+            NSMutableDictionary *errorDictionary = [self getSIQErrorObject:error];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        } else {
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:YES];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+    }];
+}
+
+- (void)startNewChat:(CDVInvokedUrlCommand*)command {
+    NSString *question = [command.arguments objectAtIndex:0];
+    NSString *customChatId = nil;
+    NSString *departmentId = nil;
+    
+    if (command.arguments.count > 1) {
+        id arg = [command.arguments objectAtIndex:1];
+        if (arg != [NSNull null]) {
+            customChatId = (NSString *)arg;
+        }
+    }
+    
+    if (command.arguments.count > 2) {
+        id arg = [command.arguments objectAtIndex:2];
+        if (arg != [NSNull null]) {
+            departmentId = (NSString *)arg;
+        }
+    }
+    
+    [[ZohoSalesIQ Chat] startWithQuestion:question chatID:customChatId department:departmentId completion:^(id<SIQError> _Nullable error, SIQVisitorChat * _Nullable chat) {
+        CDVPluginResult* pluginResult = nil;
+        if(error != nil){
+            NSMutableDictionary *errorDictionary = [self getSIQErrorObject:error];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        }else{
+            NSMutableDictionary *chatDict = [NSMutableDictionary dictionary];
+            chatDict = [self getChatObject:chat];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:chatDict];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+    }];
+}
+
+- (void)startNewChatWithTrigger:(CDVInvokedUrlCommand*)command {
+    NSString *customChatId = nil;
+    NSString *departmentId = nil;
+    
+    if (command.arguments.count > 0) {
+        id arg = [command.arguments objectAtIndex:0];
+        if (arg != [NSNull null]) {
+            customChatId = (NSString *)arg;
+        }
+    }
+    
+    if (command.arguments.count > 1) {
+        id arg = [command.arguments objectAtIndex:1];
+        if (arg != [NSNull null]) {
+            departmentId = (NSString *)arg;
+        }
+    }
+    
+    [[ZohoSalesIQ Chat] startWithTriggerWithChatID:customChatId department:departmentId completion:^(id<SIQError> _Nullable error, SIQVisitorChat * _Nullable chat) {
+        CDVPluginResult* pluginResult = nil;
+        if(error != nil){
+            NSMutableDictionary *errorDictionary = [self getSIQErrorObject:error];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        }else{
+            NSMutableDictionary *chatDict = [NSMutableDictionary dictionary];
+            chatDict = [self getChatObject:chat];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:chatDict];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+    }];
+}
+
+- (void)setChatWaitingTime:(CDVInvokedUrlCommand*)command {
+    NSInteger time = [[command.arguments objectAtIndex:0] integerValue];
+    [[ZohoSalesIQ Chat] setWaitingTimeWithUpTo:time];
+}
+
+- (void)getChat:(CDVInvokedUrlCommand*)command {
+    NSString *chatId = [command.arguments objectAtIndex:0];
+    [[ZohoSalesIQ Chat] getWithChatID:chatId completion:^(id<SIQError> _Nullable error, SIQVisitorChat * _Nullable chat) {
+        CDVPluginResult* pluginResult = nil;
+        if(error != nil){
+            NSMutableDictionary *errorDictionary = [self getSIQErrorObject:error];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:errorDictionary];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        }else{
+            NSMutableDictionary *chatDict = [NSMutableDictionary dictionary];
+            chatDict = [self getChatObject:chat];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:chatDict];
+            [[self commandDelegate] sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+    }];
+}
+
+- (void)openChat:(CDVInvokedUrlCommand*)command {
+    NSDictionary *payload = [command.arguments objectAtIndex:0];
+    NSString *type = payload[@"type"];
+    NSDictionary *payloadData = payload[@"payload"];
+    
+    if ([type isEqualToString: PAYLOAD_CHAT]) {
+        SalesIQChatNotificationPayload *chatObject = [[SalesIQChatNotificationPayload alloc] initWithDictionary:payloadData];
+        [[ZohoSalesIQ Chat] openWith:chatObject];
+    } else if ([type isEqualToString: PAYLOAD_END_CHAT]) {
+        SalesIQEndChatNotificationPayload *endChatObject = [[SalesIQEndChatNotificationPayload alloc] initWithDictionary:payloadData];
+        [[ZohoSalesIQ Chat] openWith:endChatObject];
+    }
+}
+
 - (void)registerVisitor:(CDVInvokedUrlCommand*)command{
     NSString *visitorID = [command.arguments objectAtIndex:0];
     if(visitorID!=nil){
@@ -936,6 +1089,18 @@ bool handleURI = YES;
     [[ZohoSalesIQ Chat] hideQueueTime:hide];
 }
 
+- (void)setLauncherMinimumPressDuration:(CDVInvokedUrlCommand*)command {
+    NSInteger duration = [[command.arguments objectAtIndex:0] integerValue];
+    if (duration < 0) {
+        return;
+    }
+    CGFloat seconds = (CGFloat)duration / 1000.0;
+    [[ZohoSalesIQ Launcher] minimumPressDuration:seconds];
+}
+
+- (void)refreshLauncher:(CDVInvokedUrlCommand*)command {
+    [ZohoSalesIQ refreshLauncher];
+}
 
 - (void)registerLocalizationFile:(CDVInvokedUrlCommand*)command {
     NSString *fileName = [command.arguments objectAtIndex:0];
@@ -973,15 +1138,15 @@ bool handleURI = YES;
         if (completionObject != nil) {
             if ([completionObject isKindOfClass:[SalesIQChatNotificationPayload class]]) {
                 SalesIQChatNotificationPayload *chatPayload = (SalesIQChatNotificationPayload *)completionObject;
-                resultMap[@"type"] = @"chat";
+                resultMap[@"type"] = PAYLOAD_CHAT;
                 resultMap[@"payload"] = [chatPayload toDictionary];
             } else if ([completionObject isKindOfClass:[SalesIQEndChatNotificationPayload class]]) {
                 SalesIQEndChatNotificationPayload *endChatPayload = (SalesIQEndChatNotificationPayload *)completionObject;
-                resultMap[@"type"] = @"endChatDetails";
+                resultMap[@"type"] = PAYLOAD_END_CHAT;
                 resultMap[@"payload"] = [endChatPayload toDictionary];
             } else if ([completionObject isKindOfClass:[SalesIQVisitorHistoryNotificationPayload class]]) {
                 SalesIQVisitorHistoryNotificationPayload *visitorHistoryPayload = (SalesIQVisitorHistoryNotificationPayload *)completionObject;
-                resultMap[@"type"] = @"visitorHistory";
+                resultMap[@"type"] = PAYLOAD_VISITOR_HISTORY;
                 resultMap[@"payload"] = [visitorHistoryPayload toDictionary];
             }
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:resultMap];
@@ -1853,6 +2018,28 @@ void mainThread(void (^block)(void)) {
     return departmentsArray;
 }
 
+- (NSMutableDictionary *)getNotificationActionPayload:(id)payload {
+    NSMutableDictionary *resultMap = [NSMutableDictionary dictionary];
+    if (payload != nil) {
+        if ([payload isKindOfClass:[SalesIQChatNotificationPayload class]]) {
+            SalesIQChatNotificationPayload *chatPayload = (SalesIQChatNotificationPayload *)payload;
+            resultMap[@"type"] = @"chat";
+            resultMap[@"payload"] = [chatPayload toDictionary];
+        } else if ([payload isKindOfClass:[SalesIQEndChatNotificationPayload class]]) {
+            SalesIQEndChatNotificationPayload *endChatPayload = (SalesIQEndChatNotificationPayload *)payload;
+            resultMap[@"type"] = @"endChatDetails";
+            resultMap[@"payload"] = [endChatPayload toDictionary];
+        } else if ([payload isKindOfClass:[SalesIQVisitorHistoryNotificationPayload class]]) {
+            SalesIQVisitorHistoryNotificationPayload *visitorHistoryPayload = (SalesIQVisitorHistoryNotificationPayload *)payload;
+            resultMap[@"type"] = @"visitorHistory";
+            resultMap[@"payload"] = [visitorHistoryPayload toDictionary];
+        }
+    } else {
+        NSLog(@"payload object is nil");
+    }
+    return resultMap;
+}
+
 
 
 - (void)agentsOffline {
@@ -1997,15 +2184,15 @@ void mainThread(void (^block)(void)) {
         if (completionObject != nil) {
             if ([completionObject isKindOfClass:[SalesIQChatNotificationPayload class]]) {
                 SalesIQChatNotificationPayload *chatPayload = (SalesIQChatNotificationPayload *)completionObject;
-                resultMap[@"type"] = @"chat";
+                resultMap[@"type"] = PAYLOAD_CHAT;
                 resultMap[@"payload"] = [chatPayload toDictionary];
             } else if ([completionObject isKindOfClass:[SalesIQEndChatNotificationPayload class]]) {
                 SalesIQEndChatNotificationPayload *endChatPayload = (SalesIQEndChatNotificationPayload *)completionObject;
-                resultMap[@"type"] = @"endChatDetails";
+                resultMap[@"type"] = PAYLOAD_END_CHAT;
                 resultMap[@"payload"] = [endChatPayload toDictionary];
             } else if ([completionObject isKindOfClass:[SalesIQVisitorHistoryNotificationPayload class]]) {
                 SalesIQVisitorHistoryNotificationPayload *visitorHistoryPayload = (SalesIQVisitorHistoryNotificationPayload *)completionObject;
-                resultMap[@"type"] = @"visitorHistory";
+                resultMap[@"type"] = PAYLOAD_VISITOR_HISTORY;
                 resultMap[@"payload"] = [visitorHistoryPayload toDictionary];
             }
         } else {
@@ -2013,6 +2200,11 @@ void mainThread(void (^block)(void)) {
         }
         [self sendEvent:NOTIFICATION_CLICKED body: resultMap];
     }];
+}
+
+- (void)handleNotificationAction:(SalesIQNotificationPayload *)payload {
+    NSMutableDictionary *resultMap = [self getNotificationActionPayload:payload];
+    [self sendEvent:NOTIFICATION_CLICKED body: resultMap];
 }
 
 @end

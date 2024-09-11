@@ -5,13 +5,16 @@
     <js-module name="ZohoSalesIQ" src="www/ZohoSalesIQ.js">
         <clobbers target="ZohoSalesIQ" />
     </js-module>
+    <js-module name="SIQTheme" src="www/SIQTheme.js">
+        <clobbers target="SIQTheme" />
+    </js-module>
     <platform name="ios">
         <podspec>
             <config>
                 <source url="https://github.com/CocoaPods/Specs.git" />
             </config>
             <pods use-frameworks="true">
-                <pod name="Mobilisten" spec="9.0.1" />
+                <pod name="Mobilisten" spec="9.1.1" />
             </pods>
         </podspec>
         <config-file parent="/*" target="config.xml">
