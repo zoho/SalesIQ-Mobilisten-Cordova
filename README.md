@@ -74,7 +74,11 @@ dependencyResolutionManagement {
     }
 }
 ```
-
+### Proguard rules:
+If you have enabled ProGuard(minifyEnabled) R8, then please add the following rules in your `proguard-rules.pro` file in your `android` folder.
+```
+-dontwarn kotlinx.parcelize.Parcelize
+```
 
 Find our detailed installation guide [here](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-installation.html).
 
