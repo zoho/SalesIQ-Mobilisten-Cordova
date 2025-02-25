@@ -5,6 +5,6 @@ repositories {
 }
 
 dependencies {
-    api "com.zoho.salesiq:mobilisten:8.0.5"
+    api "com.zoho.salesiq:mobilisten:8.0.9"
     implementation 'com.google.code.gson:gson:2.8.6'
 }

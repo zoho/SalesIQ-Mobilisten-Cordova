@@ -14,7 +14,7 @@
                 <source url="https://github.com/CocoaPods/Specs.git" />
             </config>
             <pods use-frameworks="true">
-                <pod name="Mobilisten" spec="9.1.1" />
+                <pod name="Mobilisten" spec="9.2.3" />
             </pods>
         </podspec>
         <config-file parent="/*" target="config.xml">

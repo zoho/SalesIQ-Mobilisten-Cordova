@@ -1,4 +1,4 @@
-[![SupportedLanguages](https://img.shields.io/badge/Platforms-iOS%20%7C%20%20Android-green.svg)](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-installation.html) [![Version](https://img.shields.io/badge/version-8.1.0-blue.svg)](https://mobilisten.io/) [![Mobilisten NPM CD](https://github.com/zoho/SalesIQ-Mobilisten-Cordova/workflows/Mobilisten%20NPM%20CD/badge.svg)](https://github.com/zoho/SalesIQ-Mobilisten-Cordova/actions?query=workflow%3A%22Mobilisten+NPM+CD%22)
+[![SupportedLanguages](https://img.shields.io/badge/Platforms-iOS%20%7C%20%20Android-green.svg)](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-installation.html) [![Version](https://img.shields.io/badge/version-8.1.1-blue.svg)](https://mobilisten.io/) [![Mobilisten NPM CD](https://github.com/zoho/SalesIQ-Mobilisten-Cordova/workflows/Mobilisten%20NPM%20CD/badge.svg)](https://github.com/zoho/SalesIQ-Mobilisten-Cordova/actions?query=workflow%3A%22Mobilisten+NPM+CD%22)
 
 # SalesIQ Mobilisten SDK - Cordova Plugin
 
@@ -14,13 +14,8 @@ Connect with customers at every step of their journey. Give them the best in-app
 
 **iOS**: iOS 12 or above is required. The minimum version of Xcode required is Xcode 13.
 
-**Android**: 
-Ensure that your project meets the following requirements:
+**Android**: `minSdkVersion` 21 or above is required.
 
-   - Minimum Android Version: Android 5.0 (Lollipop) (API Level 21)
-   - Compile SDK Version: 34 (Android 14)
-   - Required Permissions:
-      - android.permission.INTERNET (Required for network operations)  
 
 ## Installation
 
@@ -43,47 +38,12 @@ ionic cordova plugin add https://github.com/zoho/SalesIQ-Mobilisten-Cordova.git
 npm install https://github.com/zoho/SalesIQ-Mobilisten-Cordova.git
 npx cap sync
 ```
-**Android**:
-Open the `android` directory in Android Studio or any IDE used for Android development.  Open the project `build.gradle` or `settings.gradle` file and add the following maven repository.
 
-For Gradle version 6.7 and below
-```Gradle
-// Add the following to your project's root build.gradle file.
-
-allprojects {
-   repositories {
-      google()
-      mavenCentral()
-      // ...
-      maven { url 'https://maven.zohodl.com' }
-   }
-}
-```
-
-For Gradle version 6.8 and above
-```Gradle
-// Add the following to your settings.gradle file.
-
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-        // Add the Zoho Maven URL here
-        maven { url 'https://maven.zohodl.com' }
-    }
-}
-```
-### Proguard rules:
-If you have enabled ProGuard(minifyEnabled) R8, then please add the following rules in your `proguard-rules.pro` file in your `android` folder.
-```
--dontwarn kotlinx.parcelize.Parcelize
-```
 
 Find our detailed installation guide [here](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-installation.html).
 
 
 ## API Documentation
-You can find the list of all APIs and their documentation [here](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-sdk-present.html) in the **API Reference** section.
+You can find the list of all APIs and their documentation [here](https://www.zoho.com/salesiq/help/developer-section/cordova-ionic-sdk-set-launcher-visibility.html) in the **API Reference** section.
 
 </br>

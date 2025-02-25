@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Base64;
 
 import androidx.annotation.NonNull;
@@ -27,6 +28,7 @@ import com.zoho.livechat.android.SIQVisitor;
 import com.zoho.livechat.android.SIQVisitorLocation;
 import com.zoho.livechat.android.SalesIQCustomAction;
 import com.zoho.livechat.android.VisitorChat;
+import com.zoho.livechat.android.config.DeviceConfig;
 import com.zoho.livechat.android.constants.ConversationType;
 import com.zoho.livechat.android.constants.SalesIQConstants;
 import com.zoho.livechat.android.exception.InvalidEmailException;
@@ -36,6 +38,7 @@ import com.zoho.livechat.android.listeners.DepartmentListener;
 import com.zoho.livechat.android.listeners.FAQCategoryListener;
 import com.zoho.livechat.android.listeners.FAQListener;
 import com.zoho.livechat.android.listeners.OperatorImageListener;
+import com.zoho.livechat.android.listeners.RegisterListener;
 import com.zoho.livechat.android.listeners.SalesIQActionListener;
 import com.zoho.livechat.android.listeners.SalesIQChatListener;
 import com.zoho.livechat.android.listeners.SalesIQCustomActionListener;
@@ -43,8 +46,13 @@ import com.zoho.livechat.android.listeners.SalesIQListener;
 import com.zoho.livechat.android.models.SalesIQArticle;
 import com.zoho.livechat.android.models.SalesIQArticleCategory;
 import com.zoho.livechat.android.modules.common.DataModule;
+import com.zoho.livechat.android.modules.common.data.local.MobilistenEncryptedSharedPreferences;
+import com.zoho.livechat.android.modules.common.domain.repositories.entities.DebugInfoData;
 import com.zoho.livechat.android.modules.common.ui.LauncherUtil;
+import com.zoho.livechat.android.modules.common.ui.LoggerUtil;
 import com.zoho.livechat.android.modules.common.ui.result.entities.SalesIQError;
+import com.zoho.livechat.android.modules.commonpreferences.data.local.entities.CommonPreferencesLocalDataSource;
+import com.zoho.livechat.android.modules.jwt.domain.entities.SalesIQAuth;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.Resource;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.ResourceCategory;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.ResourceDepartment;
@@ -102,6 +110,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     private static final String CUSTOMTRIGGER = "CUSTOMTRIGGER";         // No I18N
     private static final String BOT_TRIGGER = "BOT_TRIGGER";         // No I18N
     private static final String HANDLE_CUSTOM_LAUNCHER_VISIBILITY = "HANDLE_CUSTOM_LAUNCHER_VISIBILITY";         // No I18N
+    private static final String VISITOR_REGISTRATION_FAILURE = "VISITOR_REGISTRATION_FAILURE";         // No I18N
     private static final String CHAT_QUEUE_POSITION_CHANGED =
             "CHAT_QUEUE_POSITION_CHANGED";         // No I18N
     private static final String HANDLE_URL = "HANDLE_URL";         // No I18N
@@ -126,6 +135,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
 
     private static final String EVENT_OPEN_URL = "EVENT_OPEN_URL";  // No I18N
     private static final String EVENT_COMPLETE_CHAT_ACTION = "EVENT_COMPLETE_CHAT_ACTION";// No I18N
+    private static final String EVENT_VISITOR_REGISTRATION_FAILURE = "EVENT_VISITOR_REGISTRATION_FAILURE";// No I18N
 
     private static final String EVENT_RESOURCE_LIKED = "RESOURCE_LIKED";         // No I18N
     private static final String EVENT_RESOURCE_DISLIKED = "RESOURCE_DISLIKED";         // No I18N
@@ -1718,6 +1728,18 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             eventEmitter(HANDLE_CUSTOM_LAUNCHER_VISIBILITY, visible);
         }
 
+        @Nullable
+        @Override
+        public SalesIQAuth onVisitorRegistrationFailed(@NonNull SalesIQError salesIQError) {
+            HashMap<String, Object> eventMap = new HashMap<>(2);
+            eventMap.put("code", salesIQError.getCode());    // No I18N
+            if (salesIQError.getMessage() != null) {
+                eventMap.put("message", salesIQError.getMessage());   // No I18N
+            }
+            eventEmitter(VISITOR_REGISTRATION_FAILURE, eventMap);
+            return null;
+        }
+
         @Override
         public void handleChatOpened(VisitorChat visitorChat) {
             HashMap visitorMap = getChatMapObject(visitorChat);
@@ -1904,10 +1926,68 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
                             }
                         }
                         break;
+                    case EVENT_VISITOR_REGISTRATION_FAILURE: {
+                        if (objects.length() > 0) {
+                            Object auth = objects.get(0);
+                            if (auth instanceof JSONObject) {
+                                handleVisitorRegistrationFailure((JSONObject) auth);
+                            }
+                        }
+                        break;
+                    }
                 }
             } catch (JSONException e) {
             }
         });
+    }
+
+    private static void handleVisitorRegistrationFailure(JSONObject map) {
+        if (map.has("type")) {
+            try {
+                String type = map.getString("type");    // No I18N
+                if ("registered_visitor".equals(type)) {
+                    String userId = map.has("userId") ? map.getString("userId") : null; // No I18N
+                    if (userId != null && !TextUtils.isEmpty(userId)) {
+                        LiveChatUtil.log("MobilistenEncryptedSharedPreferences- re-registering visitor");   // No I18N
+                        LiveChatUtil.registerVisitor(userId, new RegisterListener() {
+                            @Override
+                            public void onSuccess() {
+                                LoggerUtil.logDebugInfo(new DebugInfoData.VisitorFailureReRegistrationAcknowledged(userId));
+                                LiveChatUtil.log("MobilistenEncryptedSharedPreferences- re-registering visitor success");   // No I18N
+                                if (DataModule.getSharedPreferences().contains(MobilistenEncryptedSharedPreferences.ARE_NEW_ENCRYPTED_KEYS_PRESENT_IN_DEFAULT_PREFERENCES) && DataModule.getSharedPreferences().getBoolean(MobilistenEncryptedSharedPreferences.ARE_NEW_ENCRYPTED_KEYS_PRESENT_IN_DEFAULT_PREFERENCES, true)) {
+                                    if (DeviceConfig.getPreferences() != null) {
+                                        DeviceConfig.getPreferences().edit().putBoolean(CommonPreferencesLocalDataSource.SharedPreferenceKeys.IsEncryptedSharedPreferenceFailureAcknowledged, true).commit();
+                                    }
+                                } else {
+                                    DataModule.getSharedPreferences().edit().remove(CommonPreferencesLocalDataSource.SharedPreferenceKeys.IsEncryptedSharedPreferenceFailureAcknowledged).commit();
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(int code, String message) {
+                            }
+                        });
+                    }
+                } else if ("guest".equals(type)) {
+                    LiveChatUtil.log("MobilistenEncryptedSharedPreferences- Guest user acknowledged");
+                    JSONObject jsonObject = new JSONObject();
+                    try {
+                        jsonObject.put("avuid", LiveChatUtil.getAVUID());
+                    } catch (Exception e) {
+                        LiveChatUtil.log(e);
+                    }
+                    LoggerUtil.logDebugInfo(new DebugInfoData.VisitorFailureGuestAcknowledged(jsonObject.toString()));
+                    if (DataModule.getSharedPreferences().contains(MobilistenEncryptedSharedPreferences.ARE_NEW_ENCRYPTED_KEYS_PRESENT_IN_DEFAULT_PREFERENCES) && DataModule.getSharedPreferences().getBoolean(MobilistenEncryptedSharedPreferences.ARE_NEW_ENCRYPTED_KEYS_PRESENT_IN_DEFAULT_PREFERENCES, true)) {
+                        if (DeviceConfig.getPreferences() != null) {
+                            DeviceConfig.getPreferences().edit().putBoolean(CommonPreferencesLocalDataSource.SharedPreferenceKeys.IsEncryptedSharedPreferenceFailureAcknowledged, true).commit();
+                        }
+                    } else {
+                        DataModule.getSharedPreferences().edit().remove(CommonPreferencesLocalDataSource.SharedPreferenceKeys.IsEncryptedSharedPreferenceFailureAcknowledged).commit();
+                    }
+                }
+            } catch (JSONException ignored) {
+            }
+        }
     }
 
     public void shouldOpenUrl(final boolean value) {
