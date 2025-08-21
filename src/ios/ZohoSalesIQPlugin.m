@@ -3,6 +3,7 @@
 #import <Cordova/CDV.h>
 #import <WebKit/WebKit.h>
 #import <Mobilisten/Mobilisten.h>
+#import <MobilistenCore/MobilistenCore.h>
 
 @interface ZohoSalesIQPlugin : CDVPlugin <ZohoSalesIQDelegate, ZohoSalesIQChatDelegate, ZohoSalesIQFAQDelegate, ZohoSalesIQKnowledgeBaseDelegate> {
     // Member variables go here.
@@ -847,7 +848,7 @@ bool handleURI = YES;
         }
     }
     
-    [[ZohoSalesIQ Chat] startWithQuestion:question chatID:customChatId department:departmentId completion:^(id<SIQError> _Nullable error, SIQVisitorChat * _Nullable chat) {
+    [[ZohoSalesIQ Chat] startWithQuestion:question chatID:customChatId department:departmentId secretFields:NULL completion:^(id<SIQError> _Nullable error, SIQVisitorChat * _Nullable chat) {
         CDVPluginResult* pluginResult = nil;
         if(error != nil){
             NSMutableDictionary *errorDictionary = [self getSIQErrorObject:error];
@@ -2205,6 +2206,10 @@ void mainThread(void (^block)(void)) {
 - (void)handleNotificationAction:(SalesIQNotificationPayload *)payload {
     NSMutableDictionary *resultMap = [self getNotificationActionPayload:payload];
     [self sendEvent:NOTIFICATION_CLICKED body: resultMap];
+}
+
+- (void) shouldReRegisterPushNotification {
+    
 }
 
 @end

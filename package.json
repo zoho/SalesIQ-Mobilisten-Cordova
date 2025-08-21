@@ -1,6 +1,6 @@
 {
   "name": "cordova-zohosalesiq-mobilisten",
-  "version": "8.1.1",
+  "version": "8.2.0",
   "description": "A Cordova plugin for the Zoho SalesIQ Mobilisten SDK",
   "cordova": {
     "id": "cordova-zohosalesiq-mobilisten",
