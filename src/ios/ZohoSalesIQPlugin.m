@@ -35,6 +35,7 @@ NSString *CHAT_CLOSED = @"CHAT_CLOSED";
 NSString *FEEDBACK_RECEIVED = @"FEEDBACK_RECEIVED";
 NSString *CHAT_MISSED = @"CHAT_MISSED";
 NSString *CHAT_OPENED = @"CHAT_OPENED";
+NSString *CHAT_EXPIRED = @"CHAT_EXPIRED";
 NSString *CHAT_QUEUE_POSITION_CHANGED = @"CHAT_QUEUE_POSITION_CHANGED";
 NSString *RATING_RECEIVED = @"RATING_RECEIVED";
 NSString *CHAT_REOPENED = @"CHAT_REOPENED";
@@ -2073,6 +2074,10 @@ void mainThread(void (^block)(void)) {
 
 - (void)supportOpened {
     [self sendEvent:SUPPORT_OPENED body:nil];
+}
+
+- (void)chatExpiredWithChat:(SIQVisitorChat *)chat {
+    [self sendEvent:CHAT_EXPIRED body:[self getChatObject:chat]];
 }
 
 - (void)visitorIPBlocked {

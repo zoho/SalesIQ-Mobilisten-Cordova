@@ -45,6 +45,7 @@ import com.zoho.livechat.android.listeners.SalesIQCustomActionListener;
 import com.zoho.livechat.android.listeners.SalesIQListener;
 import com.zoho.livechat.android.models.SalesIQArticle;
 import com.zoho.livechat.android.models.SalesIQArticleCategory;
+import com.zoho.livechat.android.modules.authentication.domain.entities.SalesIQAuth;
 import com.zoho.livechat.android.modules.common.DataModule;
 import com.zoho.livechat.android.modules.common.data.local.MobilistenEncryptedSharedPreferences;
 import com.zoho.livechat.android.modules.common.domain.entities.DebugInfoData;
@@ -52,7 +53,6 @@ import com.zoho.livechat.android.modules.common.ui.LauncherUtil;
 import com.zoho.livechat.android.modules.common.ui.LoggerUtil;
 import com.zoho.livechat.android.modules.common.ui.result.entities.SalesIQError;
 import com.zoho.livechat.android.modules.commonpreferences.data.local.CommonPreferencesLocalDataSource;
-import com.zoho.livechat.android.modules.jwt.domain.entities.SalesIQAuth;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.Resource;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.ResourceCategory;
 import com.zoho.livechat.android.modules.knowledgebase.ui.entities.ResourceDepartment;
@@ -97,6 +97,7 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
     private static final String CHAT_OPENED = "CHAT_OPENED";         // No I18N
     private static final String CHAT_CLOSED = "CHAT_CLOSED";         // No I18N
     private static final String CHAT_REOPENED = "CHAT_REOPENED";         // No I18N
+    private static final String CHAT_EXPIRED = "CHAT_EXPIRED";         // No I18N
     private static final String ARTICLE_LIKED = "ARTICLE_LIKED";         // No I18N
     private static final String ARTICLE_DISLIKED = "ARTICLE_DISLIKED";         // No I18N
     private static final String ARTICLE_OPENED = "ARTICLE_OPENED";         // No I18N
@@ -1808,6 +1809,14 @@ public class ZohoSalesIQPlugin extends CordovaPlugin {
             String json = new Gson().toJson(chatMap);
             eventEmitter(HANDLE_URL, json);
             return shouldOpenUrl;
+        }
+
+        @Override
+        public void onChatExpired(@Nullable VisitorChat chat) {
+            HashMap visitorMap = getChatMapObject(chat);
+            Gson gson = new Gson();
+            String json = gson.toJson(visitorMap);
+            eventEmitter(CHAT_EXPIRED, json);
         }
     }
 
